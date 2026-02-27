@@ -21,6 +21,6 @@ jobs:
         script: |
           git config --global url.https://${{ secrets.PAT }}@github.com/.insteadOf https://github.com/
           cd /home/deploy/Hackathon_MES_main
-          git pull origin master
+          git pull origin main
           docker compose down
           docker compose up -d --build
