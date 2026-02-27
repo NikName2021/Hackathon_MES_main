@@ -16,3 +16,5 @@ spa/package-lock.json
 /spa/.env
 .data
 /spa/dist/
+/spa/nginx/local_nginx.conf
+/server/
