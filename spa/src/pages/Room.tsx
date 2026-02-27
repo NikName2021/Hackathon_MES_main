@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import type { Role } from "../types/types";
+import type { Role } from "../types/role.types";
 
 export function RoomPage() {
   const navigate = useNavigate();

@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import type { Role } from "../types/types";
+import type { Role } from "../types/role.types";
 
 type ViewState = "choice" | "join" | "created";
 
@@ -118,7 +118,8 @@ export function HomePage() {
             <DialogHeader>
               <DialogTitle>Комната создана</DialogTitle>
               <DialogDescription>
-                Пока используем фиксированные роли. Бэк будет отдавать настоящие ссылки.
+                Пока используем фиксированные роли. Бэк будет отдавать настоящие
+                ссылки.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4">
@@ -144,9 +145,6 @@ export function HomePage() {
                   </div>
                 </div>
               ))}
-              <Button variant="outline" onClick={() => setView("choice")}>
-                Создать ещё или присоединиться
-              </Button>
             </div>
           </>
         )}
