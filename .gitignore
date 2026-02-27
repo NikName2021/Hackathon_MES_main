@@ -16,3 +16,4 @@ spa/package-lock.json
 /spa/.env
 .data
 /spa/dist/
+/spa/.env

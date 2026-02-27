@@ -1,10 +1,10 @@
+import { AppRouter } from "@/routes/router";
+
 function App() {
   return (
-    <>
-      <div className="w-full flex justify-center mt-30">
-        <h1 className="text-3xl">App</h1>
-      </div>
-    </>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-orange-100 text-slate-900">
+      <AppRouter />
+    </div>
   );
 }
 
