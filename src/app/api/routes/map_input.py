@@ -7,6 +7,7 @@ from fastapi import UploadFile, File, APIRouter
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
 
 from core.config import async_get_db
 from database import Room, RoomParams, RoomMap, RoomObjects
@@ -248,8 +249,7 @@ async def create_room_params(
     await db.commit()
     await db.refresh(params)
 
-    return params
-
+    return JSONResponse(content={"status": "success"})
 
 
 @router.get("/room-params/{room_id}", response_model=ParamsMapOut)

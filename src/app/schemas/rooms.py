@@ -52,7 +52,6 @@ class CreateParamsMap(BaseModel):
         "json_schema_extra": {
             "example": {
                 "room_id": "abc123",
-                "time": "2025-06-28T14:30:00",
                 "wind": 5.2,
                 "temperature": 22.5,
                 "serviceability_water": True,
