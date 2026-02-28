@@ -2,14 +2,14 @@ import { addPlayers, registerImage, registerParams } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PATHS } from "@/config/paths";
+import { RoomCanvasEditor } from "@/components/RoomCanvasEditor";
 import {
-  setOptionFile,
   setOptionHasWaterNearby,
   setOptionTemperature,
   setOptionTime,
   setOptionWind,
-  useOptionFile,
   useOptionHasWaterNearby,
+  useOptionFile,
   useOptionTemperature,
   useOptionTime,
   useOptionWind,
@@ -31,12 +31,9 @@ export const OptionsRoomPage = () => {
   const [step, setStep] = useState<Step>("params");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const containerWidthClass = step === "image" ? "max-w-5xl" : "max-w-2xl";
   const fieldClassName =
     "h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500";
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0] ?? null;
-    setOptionFile(selected);
-  };
 
   async function handleParamsSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,7 +107,9 @@ export const OptionsRoomPage = () => {
   return (
     <main className="relative min-h-screen overflow-hidden">
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
+        <div
+          className={`w-full ${containerWidthClass} rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10`}
+        >
           <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
             Параметры комнаты
           </div>
@@ -203,22 +202,7 @@ export const OptionsRoomPage = () => {
 
           {step === "image" && (
             <div>
-              <div className="mt-6 flex flex-col gap-2">
-                <label className="text-xs text-white/70">
-                  Загрузить файл (png, pdf, svg, jpg)
-                </label>
-                <Input
-                  type="file"
-                  accept=".png,.jpg,.jpeg,.svg,.pdf,image/png,image/jpeg,image/svg+xml,application/pdf"
-                  onChange={handleFileChange}
-                  className={fieldClassName}
-                />
-                {file && (
-                  <div className="text-xs text-white/70">
-                    Выбран файл: {file.name}
-                  </div>
-                )}
-              </div>
+              <RoomCanvasEditor />
 
               {error && (
                 <div className="mt-4 text-sm text-red-200">{error}</div>
