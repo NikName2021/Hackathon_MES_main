@@ -10,7 +10,8 @@ export const LoginButton: FC<LoginButtonProps> = ({ onClick }) => {
     <div>
       <Button
         onClick={onClick}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        variant="outline"
+        className="rounded-full border-white/40 bg-white/10 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-black/30 backdrop-blur hover:bg-white/20"
       >
         Login
       </Button>

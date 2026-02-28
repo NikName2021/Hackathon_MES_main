@@ -1,15 +1,16 @@
 import { useState } from "react";
-
+import { MoveLeft } from "lucide-react";
 import { loginRequest } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 export function LoginPage() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
@@ -24,6 +25,10 @@ export function LoginPage() {
     }
   };
 
+  const HandleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden">
 
@@ -32,6 +37,15 @@ export function LoginPage() {
           onSubmit={handleSubmit}
           className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10"
         >
+          <Button
+            type="button"
+            variant="outline"
+            onClick={HandleBack}
+            className="mb-4 inline-flex h-9 gap-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
+          >
+            <MoveLeft className="h-4 w-4" />
+            Назад
+          </Button>
           <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
             Вход
           </div>

@@ -5,7 +5,7 @@ const API_URL =
   (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 
 const api = axios.create({
-  baseURL: `${API_URL}/api/v1`,
+  baseURL: `${API_URL}api/v1/`,
 });
 
 interface User {
@@ -20,11 +20,11 @@ interface LoginResponse {
 
 export async function loginRequest(login: string, password: string) {
   try {
-    const { data } = await api.post<LoginResponse>("/api/v1/auth/login", {
-      email: login,
+    const { data } = await api.post<LoginResponse>("auth/login", {
+      username: login,
       password,
     });
-
+    console.log(data);
     const token = data.access_token;
     setToken(token ? token : "");
   } catch (error) {
