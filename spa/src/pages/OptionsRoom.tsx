@@ -1,4 +1,4 @@
-import { createRoom, registerImage, registerParams } from "@/api";
+import { addPlayers, registerImage, registerParams } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PATHS } from "@/config/paths";
@@ -31,7 +31,6 @@ export const OptionsRoomPage = () => {
   const [step, setStep] = useState<Step>("params");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0] ?? null;
     setOptionFile(selected);
@@ -50,12 +49,13 @@ export const OptionsRoomPage = () => {
     }
     try {
       setLoading(true);
+
       await registerParams(
         roomId,
         hasWaterNearby,
         Number(wind),
         Number(temperature),
-        time
+        time,
       );
       setStep("image");
     } catch (error) {
@@ -90,9 +90,9 @@ export const OptionsRoomPage = () => {
     setError("");
     try {
       setLoading(true);
-      const data = await createRoom();
-      if (data?.room_id) {
-        navigate(`${PATHS.ROOM}/${data.room_id}`);
+      if (roomId) {
+        addPlayers(roomId);
+        navigate(`${PATHS.ROOM}/${roomId}`);
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : "Ошибка создания");
@@ -124,7 +124,7 @@ export const OptionsRoomPage = () => {
                       setOptionWind(
                         event.target.value === ""
                           ? ""
-                          : Number(event.target.value)
+                          : Number(event.target.value),
                       )
                     }
                     placeholder="Например, 12"
@@ -142,7 +142,7 @@ export const OptionsRoomPage = () => {
                       setOptionTemperature(
                         event.target.value === ""
                           ? ""
-                          : Number(event.target.value)
+                          : Number(event.target.value),
                       )
                     }
                     placeholder="Например, 24"

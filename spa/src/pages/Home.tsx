@@ -3,11 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PATHS } from "@/config/paths";
 import { LoginButton } from "@/components/LoginButton";
+import { createRoom } from "@/api";
 
 export function HomePage() {
   const navigate = useNavigate();
   const handleCreateRoom = () => {
-   navigate(PATHS.OPTIONS)
+   createRoom().then(() => navigate(PATHS.OPTIONS))
   };
 
   return (
