@@ -31,6 +31,8 @@ export const OptionsRoomPage = () => {
   const [step, setStep] = useState<Step>("params");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const fieldClassName =
+    "h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500";
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0] ?? null;
     setOptionFile(selected);
@@ -47,9 +49,13 @@ export const OptionsRoomPage = () => {
       setError("Заполните скорость ветра, температуру и время.");
       return;
     }
+    if (Number(wind) <= 0) {
+      setError("Скорость ветра должна быть положительной.");
+      return;
+    }
     try {
       setLoading(true);
-
+      console.log(roomId, hasWaterNearby, Number(wind), Number(temperature), time);
       await registerParams(
         roomId,
         hasWaterNearby,
@@ -119,6 +125,8 @@ export const OptionsRoomPage = () => {
                   </label>
                   <Input
                     type="number"
+                    min="0.1"
+                    step="0.1"
                     value={wind}
                     onChange={(event) =>
                       setOptionWind(
@@ -128,7 +136,7 @@ export const OptionsRoomPage = () => {
                       )
                     }
                     placeholder="Например, 12"
-                    className="h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500"
+                    className={fieldClassName}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -146,7 +154,7 @@ export const OptionsRoomPage = () => {
                       )
                     }
                     placeholder="Например, 24"
-                    className="h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500"
+                    className={fieldClassName}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -155,14 +163,14 @@ export const OptionsRoomPage = () => {
                     type="time"
                     value={time}
                     onChange={(event) => setOptionTime(event.target.value)}
-                    className="h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500"
+                    className={fieldClassName}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs text-white/70">
                     Рядом есть вода
                   </label>
-                  <div className="flex h-12 items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4">
+                  <div className="flex h-12 items-center gap-3 rounded-xl border border-white/20 bg-white/95 px-4 text-slate-900">
                     <input
                       type="checkbox"
                       checked={hasWaterNearby}
@@ -171,7 +179,7 @@ export const OptionsRoomPage = () => {
                       }
                       className="h-4 w-4 accent-orange-400"
                     />
-                    <span className="text-sm text-white/80">
+                    <span className="text-sm text-slate-500">
                       {hasWaterNearby ? "Да" : "Нет"}
                     </span>
                   </div>
@@ -203,7 +211,7 @@ export const OptionsRoomPage = () => {
                   type="file"
                   accept=".png,.jpg,.jpeg,.svg,.pdf,image/png,image/jpeg,image/svg+xml,application/pdf"
                   onChange={handleFileChange}
-                  className="h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 file:text-slate-700"
+                  className={fieldClassName}
                 />
                 {file && (
                   <div className="text-xs text-white/70">
