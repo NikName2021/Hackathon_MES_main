@@ -119,11 +119,6 @@ export const RoomPage = () => {
           )}
         </section>
 
-        <p className="text-xs text-white/50">
-          Заглушка: ссылки и токены — константы. Позже код комнаты и токены будут
-          генерироваться и проверяться на бэкенде.
-        </p>
-
         {roomCode && roomCode !== "—" && (
           <>
             <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">

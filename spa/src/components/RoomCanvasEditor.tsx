@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,14 @@ import type {
 
 type Tool = "select" | "line" | "rect" | "circle" | "fire";
 
-const COLORS = ["#F97316", "#EF4444", "#22C55E", "#38BDF8", "#E2E8F0"];
+const COLORS = [
+  "#111827",
+  "#F97316",
+  "#EF4444",
+  "#22C55E",
+  "#38BDF8",
+  "#E2E8F0",
+];
 const CANVAS_WIDTH = 1920;
 const CANVAS_HEIGHT = 1080;
 
@@ -43,6 +51,13 @@ export const RoomCanvasEditor = () => {
     startY: number;
     origin: CanvasObject;
   } | null>(null);
+  const [rotate, setRotate] = useState<{
+    id: string;
+    centerX: number;
+    centerY: number;
+    startAngle: number;
+    startRotation: number;
+  } | null>(null);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -59,6 +74,29 @@ export const RoomCanvasEditor = () => {
     return { x, y };
   };
 
+  const getObjectCenter = (obj: CanvasObject) => {
+    if (obj.type === "line") {
+      return { x: (obj.x1 + obj.x2) / 2, y: (obj.y1 + obj.y2) / 2 };
+    }
+    if (obj.type === "rect") {
+      return { x: obj.x + obj.width / 2, y: obj.y + obj.height / 2 };
+    }
+    return { x: obj.x, y: obj.y };
+  };
+
+  const getObjectRadius = (obj: CanvasObject) => {
+    if (obj.type === "line") {
+      return Math.hypot(obj.x2 - obj.x1, obj.y2 - obj.y1) / 2;
+    }
+    if (obj.type === "rect") {
+      return Math.max(obj.width, obj.height) / 2;
+    }
+    if (obj.type === "circle" || obj.type === "fire") {
+      return obj.radius;
+    }
+    return 24;
+  };
+
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0] ?? null;
     setOptionFile(selected);
@@ -69,6 +107,7 @@ export const RoomCanvasEditor = () => {
   };
 
   const handlePointerDown = (event: React.PointerEvent) => {
+    setCanvasSelectedId(null);
     if (tool === "select") return;
     const { x, y } = getPoint(event);
     const id = crypto.randomUUID();
@@ -81,6 +120,7 @@ export const RoomCanvasEditor = () => {
         y,
         radius: 10,
         color: "#EF4444",
+        rotation: 0,
       };
       addCanvasObject(fire);
       return;
@@ -96,6 +136,7 @@ export const RoomCanvasEditor = () => {
         y2: y,
         strokeWidth,
         color,
+        rotation: 0,
       };
       setDraft(line);
       return;
@@ -111,6 +152,7 @@ export const RoomCanvasEditor = () => {
         height: 0,
         strokeWidth,
         color,
+        rotation: 0,
       };
       setDraft(rect);
       return;
@@ -124,11 +166,21 @@ export const RoomCanvasEditor = () => {
       radius: 0,
       strokeWidth,
       color,
+      rotation: 0,
     };
     setDraft(circle);
   };
 
   const handlePointerMove = (event: React.PointerEvent) => {
+    if (rotate) {
+      const { x, y } = getPoint(event);
+      const angle = Math.atan2(y - rotate.centerY, x - rotate.centerX);
+      const delta = (angle - rotate.startAngle) * (180 / Math.PI);
+      updateCanvasObject(rotate.id, {
+        rotation: rotate.startRotation + delta,
+      });
+      return;
+    }
     if (!draft) {
       if (!drag) return;
       const { x, y } = getPoint(event);
@@ -163,6 +215,10 @@ export const RoomCanvasEditor = () => {
   };
 
   const handlePointerUp = () => {
+    if (rotate) {
+      setRotate(null);
+      return;
+    }
     if (drag) {
       setDrag(null);
       return;
@@ -189,8 +245,28 @@ export const RoomCanvasEditor = () => {
     setDrag({ id: obj.id, startX: x, startY: y, origin: obj });
   };
 
+  const handleRotateStart = (
+    event: React.PointerEvent,
+    obj: CanvasObject
+  ) => {
+    event.stopPropagation();
+    const { x, y } = getPoint(event);
+    const center = getObjectCenter(obj);
+    const angle = Math.atan2(y - center.y, x - center.x);
+    setRotate({
+      id: obj.id,
+      centerX: center.x,
+      centerY: center.y,
+      startAngle: angle,
+      startRotation: obj.rotation ?? 0,
+    });
+  };
+
   const renderObject = (obj: CanvasObject) => {
     if (obj.type === "line") {
+      const cx = (obj.x1 + obj.x2) / 2;
+      const cy = (obj.y1 + obj.y2) / 2;
+      const rotation = obj.rotation ?? 0;
       return (
         <line
           key={obj.id}
@@ -200,11 +276,15 @@ export const RoomCanvasEditor = () => {
           y2={obj.y2}
           stroke={obj.color}
           strokeWidth={obj.strokeWidth}
+          transform={`rotate(${rotation} ${cx} ${cy})`}
           onPointerDown={(event) => handleSelect(event, obj)}
         />
       );
     }
     if (obj.type === "rect") {
+      const cx = obj.x + obj.width / 2;
+      const cy = obj.y + obj.height / 2;
+      const rotation = obj.rotation ?? 0;
       return (
         <rect
           key={obj.id}
@@ -215,11 +295,13 @@ export const RoomCanvasEditor = () => {
           fill="none"
           stroke={obj.color}
           strokeWidth={obj.strokeWidth ?? 2}
+          transform={`rotate(${rotation} ${cx} ${cy})`}
           onPointerDown={(event) => handleSelect(event, obj)}
         />
       );
     }
     if (obj.type === "circle") {
+      const rotation = obj.rotation ?? 0;
       return (
         <circle
           key={obj.id}
@@ -229,10 +311,12 @@ export const RoomCanvasEditor = () => {
           fill="none"
           stroke={obj.color}
           strokeWidth={obj.strokeWidth ?? 2}
+          transform={`rotate(${rotation} ${obj.x} ${obj.y})`}
           onPointerDown={(event) => handleSelect(event, obj)}
         />
       );
     }
+    const rotation = obj.rotation ?? 0;
     return (
       <circle
         key={obj.id}
@@ -242,8 +326,49 @@ export const RoomCanvasEditor = () => {
         fill={obj.color}
         stroke="#111827"
         strokeWidth={1}
+        transform={`rotate(${rotation} ${obj.x} ${obj.y})`}
         onPointerDown={(event) => handleSelect(event, obj)}
       />
+    );
+  };
+
+  const renderRotateHandle = () => {
+    if (!selectedObject) return null;
+    const center = getObjectCenter(selectedObject);
+    const radius = Math.max(24, getObjectRadius(selectedObject));
+    const handleOffset = radius + 36;
+    const handleX = center.x;
+    const handleY = center.y - handleOffset;
+    const rotation = selectedObject.rotation ?? 0;
+    const iconSize = 16;
+    return (
+      <g transform={`rotate(${rotation} ${center.x} ${center.y})`}>
+        <line
+          x1={center.x}
+          y1={center.y}
+          x2={handleX}
+          y2={handleY}
+          stroke="rgba(255,255,255,0.4)"
+          strokeDasharray="4 6"
+          pointerEvents="none"
+        />
+        <g
+          onPointerDown={(event) => handleRotateStart(event, selectedObject)}
+          style={{ cursor: "grab" }}
+        >
+          <circle
+            cx={handleX}
+            cy={handleY}
+            r={16}
+            fill="#FFFFFF"
+            stroke="#F97316"
+            strokeWidth={2}
+          />
+          <g transform={`translate(${handleX - iconSize / 2} ${handleY - iconSize / 2})`}>
+            <RotateCw width={iconSize} height={iconSize} color="#F97316" />
+          </g>
+        </g>
+      </g>
     );
   };
 
@@ -339,6 +464,7 @@ export const RoomCanvasEditor = () => {
           )}
           {objects.map(renderObject)}
           {draft && renderObject(draft)}
+          {renderRotateHandle()}
         </svg>
       </div>
 
@@ -350,150 +476,243 @@ export const RoomCanvasEditor = () => {
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             {selectedObject.type !== "line" && (
               <>
-                <Input
-                  type="number"
-                  value={selectedObject.x}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      x: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.y}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      y: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>X</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.x}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        x: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Y</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.y}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        y: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
               </>
             )}
             {selectedObject.type === "rect" && (
               <>
-                <Input
-                  type="number"
-                  value={selectedObject.width}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      width: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.height}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      height: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.strokeWidth}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      strokeWidth: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Ширина</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.width}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        width: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Высота</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.height}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        height: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Толщина</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.strokeWidth}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        strokeWidth: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Поворот (°)</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.rotation ?? 0}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        rotation: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
               </>
             )}
             {selectedObject.type === "circle" && (
               <>
-                <Input
-                  type="number"
-                  value={selectedObject.radius}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      radius: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.strokeWidth}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      strokeWidth: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Радиус</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.radius}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        radius: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Толщина</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.strokeWidth}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        strokeWidth: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Поворот (°)</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.rotation ?? 0}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        rotation: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
               </>
             )}
             {selectedObject.type === "fire" && (
-              <Input
-                type="number"
-                value={selectedObject.radius}
-                onChange={(event) =>
-                  updateCanvasObject(selectedObject.id, {
-                    radius: Number(event.target.value),
-                  })
-                }
-                className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-              />
+              <>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Радиус</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.radius}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        radius: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Поворот (°)</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.rotation ?? 0}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        rotation: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+              </>
             )}
             {selectedObject.type === "line" && (
               <>
-                <Input
-                  type="number"
-                  value={selectedObject.x1}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      x1: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.y1}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      y1: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.x2}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      x2: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.y2}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      y2: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
-                <Input
-                  type="number"
-                  value={selectedObject.strokeWidth}
-                  onChange={(event) =>
-                    updateCanvasObject(selectedObject.id, {
-                      strokeWidth: Number(event.target.value),
-                    })
-                  }
-                  className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
-                />
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>X1</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.x1}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        x1: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Y1</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.y1}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        y1: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>X2</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.x2}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        x2: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Y2</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.y2}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        y2: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Толщина</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.strokeWidth}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        strokeWidth: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs text-white/70">
+                  <span>Поворот (°)</span>
+                  <Input
+                    type="number"
+                    value={selectedObject.rotation ?? 0}
+                    onChange={(event) =>
+                      updateCanvasObject(selectedObject.id, {
+                        rotation: Number(event.target.value),
+                      })
+                    }
+                    className="h-10 rounded-xl border-white/20 bg-white/95 text-slate-900"
+                  />
+                </label>
               </>
             )}
           </div>

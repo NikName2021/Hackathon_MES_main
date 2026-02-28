@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { CanvasObject } from "@/types/canvas.types";
 
 type CanvasStateData = {
@@ -10,6 +9,7 @@ type CanvasStateData = {
 
 type CanvasStateFunc = {
   setBackgroundUrl: (url: string | null) => void;
+  setObjects: (objects: CanvasObject[]) => void;
   addObject: (obj: CanvasObject) => void;
   updateObject: (id: string, patch: Partial<CanvasObject>) => void;
   removeObject: (id: string) => void;
@@ -19,12 +19,12 @@ type CanvasStateFunc = {
 
 type CanvasState = CanvasStateData & CanvasStateFunc;
 
-const useCanvasStore = create<CanvasState>()(
-  persist((set) => ({
+const useCanvasStore = create<CanvasState>(((set) => ({
   backgroundUrl: null,
   objects: [],
   selectedId: null,
   setBackgroundUrl: (url) => set({ backgroundUrl: url }),
+  setObjects: (objects) => set({ objects }),
   addObject: (obj) =>
     set((state) => ({ objects: [...state.objects, obj] })),
   updateObject: (id, patch) =>
@@ -40,7 +40,7 @@ const useCanvasStore = create<CanvasState>()(
     })),
   setSelectedId: (id) => set({ selectedId: id }),
   clearCanvas: () => set({ backgroundUrl: null, objects: [], selectedId: null }),
-  }), {name: "canvas"}));
+  })));
 
 export const useCanvasBackgroundUrl = () =>
   useCanvasStore((state) => state.backgroundUrl);
@@ -50,6 +50,8 @@ export const useCanvasSelectedId = () =>
 
 export const setCanvasBackgroundUrl = (url: string | null) =>
   useCanvasStore.getState().setBackgroundUrl(url);
+export const setCanvasObjects = (objects: CanvasObject[]) =>
+  useCanvasStore.getState().setObjects(objects);
 export const addCanvasObject = (obj: CanvasObject) =>
   useCanvasStore.getState().addObject(obj);
 export const updateCanvasObject = (id: string, patch: Partial<CanvasObject>) =>

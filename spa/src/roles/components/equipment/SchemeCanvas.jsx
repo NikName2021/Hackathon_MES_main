@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useCanvasBackgroundUrl, useCanvasObjects } from '../../../store/canvas'
 import './SchemeCanvas.css'
 
 /**
@@ -16,6 +17,77 @@ function SchemeCanvas({
   zoom = 1,
 }) {
   const [dragOver, setDragOver] = useState(false)
+  const canvasObjects = useCanvasObjects()
+  const canvasBackground = useCanvasBackgroundUrl()
+  const hasCanvasObjects = canvasObjects && canvasObjects.length > 0
+  const hasCanvasLayer = Boolean(canvasBackground) || hasCanvasObjects
+
+  const renderCanvasObject = (obj) => {
+    const rotation = obj.rotation ?? 0
+    const stroke = obj.color || '#F97316'
+    if (obj.type === 'line') {
+      const cx = (obj.x1 + obj.x2) / 2
+      const cy = (obj.y1 + obj.y2) / 2
+      return (
+        <line
+          key={obj.id}
+          x1={obj.x1}
+          y1={obj.y1}
+          x2={obj.x2}
+          y2={obj.y2}
+          stroke={stroke}
+          strokeWidth={obj.strokeWidth || 2}
+          transform={`rotate(${rotation} ${cx} ${cy})`}
+        />
+      )
+    }
+    if (obj.type === 'rect') {
+      const cx = obj.x + obj.width / 2
+      const cy = obj.y + obj.height / 2
+      return (
+        <rect
+          key={obj.id}
+          x={obj.x}
+          y={obj.y}
+          width={obj.width}
+          height={obj.height}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={obj.strokeWidth || 2}
+          transform={`rotate(${rotation} ${cx} ${cy})`}
+        />
+      )
+    }
+    if (obj.type === 'circle') {
+      return (
+        <circle
+          key={obj.id}
+          cx={obj.x}
+          cy={obj.y}
+          r={obj.radius}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={obj.strokeWidth || 2}
+          transform={`rotate(${rotation} ${obj.x} ${obj.y})`}
+        />
+      )
+    }
+    if (obj.type === 'fire') {
+      return (
+        <circle
+          key={obj.id}
+          cx={obj.x}
+          cy={obj.y}
+          r={obj.radius}
+          fill={obj.color || '#EF4444'}
+          stroke="#111827"
+          strokeWidth={1}
+          transform={`rotate(${rotation} ${obj.x} ${obj.y})`}
+        />
+      )
+    }
+    return null
+  }
 
   const handleDragOver = (e) => {
     e.preventDefault()
@@ -146,6 +218,23 @@ function SchemeCanvas({
         className="scheme-canvas-inner"
         style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
       >
+        {hasCanvasLayer && (
+          <svg
+            className="scheme-canvas-overlay"
+            viewBox="0 0 1920 1080"
+            preserveAspectRatio="none"
+          >
+            {canvasBackground && (
+              <image
+                href={canvasBackground}
+                width="1920"
+                height="1080"
+                preserveAspectRatio="none"
+              />
+            )}
+            {canvasObjects.map(renderCanvasObject)}
+          </svg>
+        )}
         {placedItems.map((item) => (
           <div
             key={item.id}
@@ -203,7 +292,7 @@ function SchemeCanvas({
             )}
           </div>
         ))}
-        {placedItems.length === 0 && (
+        {placedItems.length === 0 && !hasCanvasLayer && (
           <div className="scheme-placeholder">
             Перетащите элементы с панели сюда
           </div>
