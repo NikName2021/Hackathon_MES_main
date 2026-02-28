@@ -1,11 +1,13 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { useInviteToken, usePlayerData } from "@/store/player";
 import { ButtonBack } from "@/components/ButtonBack";
+import { ROLE_TO_PATH } from "@/config/paths";
 
 export function InvitePage() {
   const { tokenId } = useParams();
+  const navigate = useNavigate();
   const storedToken = useInviteToken();
   const data = usePlayerData();
 
@@ -26,7 +28,7 @@ export function InvitePage() {
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
         <ButtonBack/>
-          <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
+          <div className="text-xs uppercase tracking-[0.3em] text-[var(--accent-light)] font-medium">
             Приглашение
           </div>
           <h1 className="mt-3 text-2xl font-semibold">{data.message}</h1>
@@ -58,6 +60,10 @@ export function InvitePage() {
             type="button"
             variant="outline"
             className="mt-6 inline-flex h-11 border-white/30 bg-white/10 text-white hover:bg-white/20"
+            onClick={() => {
+              const rolePath = data ? ROLE_TO_PATH[data.role] : null;
+              if (rolePath) navigate(rolePath);
+            }}
           >
             Готово
           </Button>

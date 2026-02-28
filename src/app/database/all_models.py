@@ -3,7 +3,7 @@ import uuid
 from enum import Enum
 
 from sqlalchemy import (
-    Column, String, DateTime, ForeignKey, Boolean, Enum as SAEnum, Integer, Float
+    Column, String, DateTime, ForeignKey, Boolean, Enum as SAEnum, Integer, Float, JSON
 )
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import declarative_base, relationship
@@ -12,10 +12,26 @@ DeclBase = declarative_base()
 
 
 class RoleEnum(str, Enum):
-    leader = "leader"
-    analyst = "analyst"
-    developer = "developer"
-    tester = "tester"
+    dispatcher = "Диспетчер"
+    rtp = "РТП"
+    headquarters = "штаб"
+    by1 = "БУ1"
+    by2 = "БУ2"
+
+ROLES_NEX = {
+    "dispatcher": "Диспетчер",
+    "rtp":"РТП",
+    "headquarters": "Штаб",
+    "by1": "БУ1",
+    "by2": "БУ2"
+}
+
+# class RoleEnum(str, Enum):
+#     dispatcher = "dispatcher"
+#     rtp = "rtp"
+#     headquarters = "headquarters"
+#     by1 = "by1"
+#     by2 = "by2"
 
 
 class Room(DeclBase):
@@ -29,6 +45,8 @@ class Room(DeclBase):
                           cascade="all, delete-orphan")
     room_map = relationship("RoomMap", back_populates="room", uselist=False,
                             cascade="all, delete-orphan")
+    objects = relationship("RoomObjects", back_populates="room", uselist=False,
+                           cascade="all, delete-orphan")
 
 
 class Invite(DeclBase):
@@ -126,6 +144,22 @@ class RoomMap(DeclBase):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     room = relationship("Room", back_populates="room_map")
+
+
+class RoomObjects(DeclBase):
+    """
+    Произвольные объекты карты, связанные с комнатой.
+    Храним как JSON-массив, одна запись на комнату.
+    """
+    __tablename__ = "room_objects"
+
+    id = Column(String, primary_key=True, default=lambda: uuid.uuid4().hex)
+    room_id = Column(String, ForeignKey("rooms.id"), unique=True, nullable=False)
+    payload = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    room = relationship("Room", back_populates="objects")
 
 async def create_tables(engine: AsyncEngine):
     # DeclBase.metadata.create_all()

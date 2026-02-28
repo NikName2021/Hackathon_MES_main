@@ -50,7 +50,6 @@ async def join_room(
 
     await db.commit()
 
-    # 4. Считаем сколько уже в комнате
     count_result = await db.execute(
         select(func.count()).select_from(Invite).where(
             Invite.room_id == invite.room_id,
@@ -82,6 +81,7 @@ async def join_room(
         user_id=user.id,
         username=user.username,
         role=invite.role.value,
+        room_id=invite.room_id,
         tokens=tokens,
     )
 

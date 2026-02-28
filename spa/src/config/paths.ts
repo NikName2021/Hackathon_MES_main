@@ -7,4 +7,17 @@ export const PATHS = {
     ROOM_ID: "/room/:roomId",
     INVITE: "/invite/:tokenId",
     OPTIONS: "/options",
+    ROLE_DISPATCHER: "/dispatcher",
+    ROLE_RTP: "/rtp",
+    ROLE_HEADQUARTERS: "/headquarters",
+    ROLE_COMBAT_SECTION_1: "/combat-section-1",
+    ROLE_COMBAT_SECTION_2: "/combat-section-2",
+}
+
+export const ROLE_TO_PATH: Record<string, string> = {
+    "Диспетчер": PATHS.ROLE_DISPATCHER,
+    "РТП": PATHS.ROLE_RTP,
+    "штаб": PATHS.ROLE_HEADQUARTERS,
+    "БУ1": PATHS.ROLE_COMBAT_SECTION_1,
+    "БУ2": PATHS.ROLE_COMBAT_SECTION_2,
 }
