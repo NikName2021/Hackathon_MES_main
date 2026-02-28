@@ -25,7 +25,6 @@ async def join_room(
     Указывает своё имя → получает JWT-токен и роль в комнате.
     """
 
-    # 1. Ищем инвайт
     result = await db.execute(
         select(Invite).where(Invite.token == invite_token)
     )
@@ -60,9 +59,6 @@ async def join_room(
     )
     members_count = count_result.scalar()
 
-    # ─────────────────────────────────────────
-    # 5. УВЕДОМЛЯЕМ АДМИНА ЧЕРЕЗ WEBSOCKET
-    # ─────────────────────────────────────────
     await manager.notify_player_joined(
         room_id=invite.room_id,
         user_id=user.id,
@@ -85,7 +81,6 @@ async def join_room(
         message=f"Добро пожаловать, {username}! Вы — {invite.role.value}",
         user_id=user.id,
         username=user.username,
-        room_id=invite.room_id,
         role=invite.role.value,
         tokens=tokens,
     )

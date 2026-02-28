@@ -3,7 +3,7 @@ import uuid
 from enum import Enum
 
 from sqlalchemy import (
-    Column, String, DateTime, ForeignKey, Boolean, Enum as SAEnum, Integer
+    Column, String, DateTime, ForeignKey, Boolean, Enum as SAEnum, Integer, Float
 )
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import declarative_base, relationship
@@ -25,6 +25,8 @@ class Room(DeclBase):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     invites = relationship("Invite", back_populates="room", cascade="all, delete-orphan")
+    params = relationship("RoomParams", back_populates="room", uselist=False,
+                          cascade="all, delete-orphan")
 
 
 class Invite(DeclBase):
@@ -91,6 +93,22 @@ class Admin(DeclBase):
 
     admin_refresh_tokens = relationship("AdminIssuedJWTToken", cascade="all,delete", back_populates="admin")
 
+
+class RoomParams(DeclBase):
+    __tablename__ = "room_params"
+
+    id = Column(String, primary_key=True, default=lambda: uuid.uuid4().hex)
+    room_id = Column(String, ForeignKey("rooms.id"), unique=True, nullable=False)
+
+    time = Column(DateTime, nullable=False)
+    wind = Column(Float, nullable=False)
+    temperature = Column(Float, nullable=False)
+    serviceability_water = Column(Boolean, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    room = relationship("Room", back_populates="params")
 
 async def create_tables(engine: AsyncEngine):
     # DeclBase.metadata.create_all()
