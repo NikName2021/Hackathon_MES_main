@@ -1,10 +1,11 @@
+import { AppShell } from "@/components/AppShell";
 import { AppRouter } from "@/routes/router";
 
 function App() {
   return (
-    <div className="min-h-screen">
+    <AppShell>
       <AppRouter />
-    </div>
+    </AppShell>
   );
 }
 

@@ -55,13 +55,6 @@ export const RoomPage = () => {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 right-10 h-80 w-80 rounded-full bg-gradient-to-br from-red-600/35 via-orange-500/25 to-amber-400/30 blur-3xl" />
-        <div className="absolute bottom-0 left-8 h-72 w-72 rounded-full bg-gradient-to-br from-orange-500/25 via-red-500/20 to-amber-300/30 blur-3xl" />
-        <div className="absolute inset-0 opacity-40 [background-image:repeating-linear-gradient(135deg,rgba(255,255,255,0.08)_0,rgba(255,255,255,0.08)_8px,transparent_8px,transparent_16px)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_60%)]" />
-      </div>
-
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-14">
         <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
