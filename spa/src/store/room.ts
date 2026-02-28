@@ -9,6 +9,7 @@ type RoomStateData = {
 
 type RoomStateFunc = {
   setRoomData: (data: RoomData) => void;
+  setRoomId: (roomId: string) => void;
   clearRoomData: () => void;
 };
 
@@ -19,9 +20,9 @@ const useRoomStore = create<RoomState>((set) => ({
   invites: [],
   setRoomData: (data) =>
     set({
-      roomId: data.room_id,
       invites: data.invites,
     }),
+  setRoomId: (roomId) => set({ roomId }),
   clearRoomData: () => set({ roomId: null, invites: [] }),
 }));
 
@@ -32,3 +33,4 @@ export const setRoomData = (data: RoomData) => {
   useRoomStore.getState().setRoomData(data);
 };
 export const clearRoomData = () => useRoomStore.getState().clearRoomData();
+export const setRoomId = (roomId: string) => roomId ? useRoomStore.getState().setRoomId(roomId) : null;

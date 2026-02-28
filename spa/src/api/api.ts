@@ -1,13 +1,14 @@
 import axios from "axios";
 import { withAuth } from "@/utils/withAuth";
 import { setToken } from "@/store/auth";
-import { setRoomData } from "@/store/room";
+import { setRoomData, setRoomId } from "@/store/room";
 import { setPlayerData } from "@/store/player";
-import type { RoomData } from "@/types/room.types";
+import type { RoomData, roomId } from "@/types/room.types";
 import type { InviteRoomResponse } from "@/types/invite.types";
+import type { CanvasObject } from "@/types/canvas.types";
 
-// Пустой или не задан — запросы на тот же хост (nginx проксирует /api/ на бэкенд)
 const API_URL = (import.meta.env.VITE_API_URL as string)?.trim() || "";
+
 
 export const api = axios.create({
   baseURL: API_URL ? `${API_URL.replace(/\/$/, "")}/api/v1` : "/api/v1",
@@ -18,7 +19,6 @@ export const apiAuth = {
   post: <T>(url: string, data?: unknown, config = {}) =>
     api.post<T>(url, data, withAuth(config)),
 };
-
 
 interface User {
   id: number;
@@ -52,10 +52,28 @@ export async function loginRequest(login: string, password: string) {
   }
 }
 
+export async function addPlayers(room_id: string) {
+  try {
+    const { data } = await apiAuth.get<RoomData>(`room/add_users/${room_id}`);
+    setRoomData(data);
+    return data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message || "Ошибка входа");
+    }
+    throw new Error("Ошибка входа");
+  }
+}
+
 export async function createRoom() {
   try {
-    const { data } = await apiAuth.get<RoomData>("room/create-room");
-    setRoomData(data);
+    const { data } = await apiAuth.get<roomId>("room/create-room");
+    setRoomId(data.room_id);
     return data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -76,8 +94,52 @@ export async function getInviteRoom(inviteToken: string, username: string) {
       params: { invite_token: inviteToken, username },
     });
     setPlayerData(data, inviteToken);
-    console.log(data)
+    console.log(data);
     return data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message || "Ошибка входа");
+    }
+    throw new Error("Ошибка входа");
+  }
+}
+
+export async function registerParams(
+  room_id: string,
+  serviceability_water: boolean,
+  wind: number,
+  temperature: number,
+  time: string,
+) {
+  try {
+    await apiAuth.post("room_params/room-params", {
+      room_id,
+      serviceability_water,
+      wind,
+      temperature,
+      time,
+    });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message || "Ошибка входа");
+    }
+    throw new Error("Ошибка входа");
+  }
+}
+
+export async function registerImage(room_id: string, objects: CanvasObject[]) {
+  try {
+    await apiAuth.post(`room_params/${room_id}/objects`, { room_id, objects });
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const payload = error.response?.data as

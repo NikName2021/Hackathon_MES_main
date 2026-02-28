@@ -5,6 +5,9 @@ export type RoomInvite = {
 };
 
 export type RoomData = {
-  room_id: string;
   invites: RoomInvite[];
 };
+
+export type roomId = {
+  room_id: string
+}
