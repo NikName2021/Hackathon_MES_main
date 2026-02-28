@@ -16,24 +16,24 @@ async def get_auth_service(db: AsyncSession = Depends(async_get_db)) -> AuthServ
     return AuthService(repo)
 
 
-@router.post("/register", response_model=UserResponse)
-async def register(
-        user_data: UserCreate,
-        service: AuthService = Depends(get_auth_service)
-):
-    try:
-        logger.info(f"Request to register user: {user_data.email}")
-
-        return await service.register_user(user_data)
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Unexpected error in /register endpoint: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось обработать запрос регистрации"
-        )
+# @router.post("/register", response_model=UserResponse)
+# async def register(
+#         user_data: UserCreate,
+#         service: AuthService = Depends(get_auth_service)
+# ):
+#     try:
+#         logger.info(f"Request to register user: {user_data.email}")
+#
+#         return await service.register_user(user_data)
+#
+#     except HTTPException as e:
+#         raise e
+#     except Exception as e:
+#         logger.error(f"Unexpected error in /register endpoint: {e}", exc_info=True)
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Не удалось обработать запрос регистрации"
+#         )
 
 
 @router.post("/login", response_model=Token)
@@ -42,7 +42,7 @@ async def login(
         service: AuthService = Depends(get_auth_service)
 ):
     try:
-        logger.info(f"Login request for user: {user_data.email}")
+        logger.info(f"Login request for user: {user_data.username}")
         return await service.authenticate_user(user_data)
 
     except HTTPException as e:
@@ -72,3 +72,5 @@ async def refresh_token(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Не удалось обновить токен"
         )
+
+
