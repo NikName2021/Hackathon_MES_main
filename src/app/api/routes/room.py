@@ -18,8 +18,8 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
 MAX_FILE_SIZE = 7 * 1024 * 1024
-# ROOM_ROLES = ["dispatcher", "rtp", "headquarters", "by1", "by2"]
-ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
+ROOM_ROLES = ["dispatcher", "rtp", "headquarters", "by1", "by2"]
+# ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
 
 router = APIRouter(prefix="/room", tags=["Комнаты"])
 
@@ -40,9 +40,10 @@ async def create_room(
 
     invites_out = []
     for role_name in ROOM_ROLES:
+        role_value = getattr(RoleEnum, role_name)
         invite = Invite(
             room_id=room.id,
-            role=RoleEnum(role_name),
+            role=role_value
         )
         db.add(invite)
         await db.flush()

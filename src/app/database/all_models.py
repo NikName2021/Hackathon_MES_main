@@ -11,19 +11,19 @@ from sqlalchemy.orm import declarative_base, relationship
 DeclBase = declarative_base()
 
 
-# class RoleEnum(str, Enum):
-#     dispatcher = "Диспетчер"
-#     rtp = "РТП"
-#     headquarters = "штаб"
-#     by1 = "БУ1"
-#     by2 = "БУ2"
-
 class RoleEnum(str, Enum):
-    dispatcher = "dispatcher"
-    rtp = "rtp"
-    headquarters = "headquarters"
-    by1 = "by1"
-    by2 = "by2"
+    dispatcher = "Диспетчер"
+    rtp = "РТП"
+    headquarters = "штаб"
+    by1 = "БУ1"
+    by2 = "БУ2"
+
+# class RoleEnum(str, Enum):
+#     dispatcher = "dispatcher"
+#     rtp = "rtp"
+#     headquarters = "headquarters"
+#     by1 = "by1"
+#     by2 = "by2"
 
 
 class Room(DeclBase):
