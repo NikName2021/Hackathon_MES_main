@@ -10,6 +10,7 @@ import {
   LocalAudioTrack,
   RemoteAudioTrack,
   createLocalAudioTrack,
+  type Track,
 } from "livekit-client";
 
 const tokenServerUrl =
@@ -35,10 +36,16 @@ export function RadioWidget({
   const [currentHolder, setCurrentHolder] = useState<string | null>(null);
   const [participants, setParticipants] = useState<string[]>([]);
   const [expanded, setExpanded] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
   const micTrackRef = useRef<LocalAudioTrack | null>(null);
   const identityRef = useRef<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const recordingContextRef = useRef<AudioContext | null>(null);
+  const recordingDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const recordingSourcesRef = useRef<MediaStreamAudioSourceNode[]>([]);
 
   const initMicTrack = useCallback(async () => {
     if (micTrackRef.current) return micTrackRef.current;
@@ -152,6 +159,16 @@ export function RadioWidget({
   }, [roomId, identity]);
 
   const disconnect = useCallback(async () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+    setIsRecording(false);
+    recordingContextRef.current?.close().catch(() => {});
+    recordingContextRef.current = null;
+    recordingDestinationRef.current = null;
+    recordingSourcesRef.current = [];
+    recordingChunksRef.current = [];
     try {
       if (identityRef.current && tokenServerUrl) {
         await fetch(`${tokenServerUrl}/ptt/release`, {
@@ -255,6 +272,108 @@ export function RadioWidget({
     if (isHoldingPtt) releasePtt();
   };
 
+  const addTrackToRecording = useCallback(
+    (ctx: AudioContext, dest: MediaStreamAudioDestinationNode, mediaStreamTrack: MediaStreamTrack) => {
+      try {
+        const source = ctx.createMediaStreamSource(new MediaStream([mediaStreamTrack]));
+        source.connect(dest);
+        recordingSourcesRef.current.push(source);
+      } catch {
+        /* ignore */
+      }
+    },
+    []
+  );
+
+  const startRecording = useCallback(() => {
+    const room = roomRef.current;
+    if (!room || isRecording) return;
+
+    const ctx = new AudioContext({ sampleRate: 48000 });
+    const dest = ctx.createMediaStreamDestination();
+    recordingContextRef.current = ctx;
+    recordingDestinationRef.current = dest;
+    recordingSourcesRef.current = [];
+    recordingChunksRef.current = [];
+
+    room.remoteParticipants.forEach((participant) => {
+      participant.audioTrackPublications.forEach((pub) => {
+        const track = pub.track;
+        if (track?.mediaStreamTrack) addTrackToRecording(ctx, dest, track.mediaStreamTrack);
+      });
+    });
+
+    room.localParticipant.audioTrackPublications.forEach((pub) => {
+      const track = pub.track;
+      if (track?.mediaStreamTrack) addTrackToRecording(ctx, dest, track.mediaStreamTrack);
+    });
+
+    const mixStream = dest.stream;
+
+    const finishRecording = () => {
+      const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
+      if (blob.size > 0) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `radio-${roomId}-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      recordingSourcesRef.current = [];
+      recordingContextRef.current = null;
+      recordingDestinationRef.current = null;
+      recordingChunksRef.current = [];
+      ctx.close().catch(() => {});
+    };
+
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(mixStream, { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 128000 });
+    } catch {
+      recorder = new MediaRecorder(mixStream);
+    }
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordingChunksRef.current.push(e.data);
+    };
+    recorder.onstop = () => {
+      finishRecording();
+    };
+
+    recorder.start(500);
+    mediaRecorderRef.current = recorder;
+    setIsRecording(true);
+  }, [roomId, isRecording, addTrackToRecording]);
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const room = roomRef.current;
+    const ctx = recordingContextRef.current;
+    const dest = recordingDestinationRef.current;
+    if (!room || !ctx || !dest) return;
+
+    const onTrackSubscribed = (track: Track) => {
+      if (track.kind === "audio") {
+        const mt = (track as RemoteAudioTrack).mediaStreamTrack;
+        if (mt) addTrackToRecording(ctx, dest, mt);
+      }
+    };
+
+    room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
+    return () => {
+      room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
+    };
+  }, [isRecording, addTrackToRecording]);
+
+  const stopRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+      mediaRecorderRef.current = null;
+    }
+    setIsRecording(false);
+  }, []);
+
   const isConnected = connectionState === "connected";
   const myIdentity = identityRef.current;
 
@@ -288,6 +407,27 @@ export function RadioWidget({
                 </li>
               ))}
             </ul>
+          </div>
+          <div className="radio-widget-admin-recording">
+            {!isRecording ? (
+              <button
+                type="button"
+                className="radio-widget-btn radio-widget-btn-record"
+                onClick={startRecording}
+                title="Записать эфир рации и сохранить файл"
+              >
+                🎙️ Начать запись
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="radio-widget-btn radio-widget-btn-stop"
+                onClick={stopRecording}
+                title="Остановить запись и скачать файл"
+              >
+                ⏹ Остановить и сохранить
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -439,6 +579,42 @@ const radioWidgetCss = `
   border: 1px solid rgba(34, 197, 94, 0.6);
   color: #86efac;
   font-size: 0.7rem;
+}
+
+.radio-widget-admin-recording {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.radio-widget-btn-record {
+  width: 100%;
+  background: rgba(234, 179, 8, 0.2);
+  border: 1px solid rgba(234, 179, 8, 0.6);
+  color: #fde047;
+  cursor: pointer;
+}
+
+.radio-widget-btn-record:hover {
+  background: rgba(234, 179, 8, 0.3);
+}
+
+.radio-widget-btn-stop {
+  width: 100%;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  color: #fca5a5;
+  cursor: pointer;
+  animation: radio-widget-recording-pulse 1.5s ease-in-out infinite;
+}
+
+.radio-widget-btn-stop:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+@keyframes radio-widget-recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }
 
 .radio-widget-bubble {
