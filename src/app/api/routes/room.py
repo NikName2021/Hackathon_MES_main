@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from fastapi import APIRouter, Depends
@@ -7,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from core.config import async_get_db, BASE_URL
+from core.config import async_get_db, BASE_URL, sessionmaker
 from core.ws_manager import manager
-from database import User, Room, Invite, RoleEnum, Admin
+from database import User, Room, Invite, RoleEnum, Admin, RoomState
 from helpers import require_admin, require_admin_or_any_user
 from schemas.rooms import RoomCreatedOut, InviteLinkOut, RoomStatusOut, RoomAddCreated
 
@@ -86,6 +87,26 @@ async def get_room_status(
         invites=invites_out,
     )
 
+
+
+@router.get("/{room_id}/state")
+async def get_room_state(
+        room_id: str,
+        current_user: User | Admin = Depends(require_admin_or_any_user),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Текущее состояние сцены комнаты (из БД).
+    Для восстановления сцены при перезагрузке страницы или повторном входе.
+    """
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    return {"room_id": room_id, "state": state_row.payload if state_row else {}}
 
 
 @router.get("/rooms/{room_id}", response_model=RoomStatusOut)
@@ -174,3 +195,74 @@ async def admin_room_websocket(
 
     except WebSocketDisconnect:
         manager.disconnect_admin(websocket, room_id)
+
+
+# ──────────────────────────────────────
+#  WebSocket для игроков: синхронизация сцены
+# ──────────────────────────────────────
+
+
+@router.websocket("/ws/game/{room_id}")
+async def game_room_websocket(
+        websocket: WebSocket,
+        room_id: str,
+):
+    """
+    Игрок подключается к комнате. При изменении сцены на фронте шлёт scene_update —
+    состояние сохраняется в БД и рассылается остальным игрокам (и админам) в комнате.
+
+    Сообщения от клиента (JSON):
+      - {"event": "scene_update", "data": { ... }} — новое состояние сцены (сохраняем и рассылаем)
+      - "ping" — ответ "pong"
+
+    Сообщения клиенту:
+      - {"event": "scene_state", "data": { ... }} — при подключении (текущее состояние из БД)
+      - {"event": "scene_update", "data": { ... }} — обновление от другого игрока
+    """
+    async with sessionmaker() as db:
+        room_result = await db.execute(select(Room).where(Room.id == room_id))
+        room = room_result.scalar_one_or_none()
+        if not room:
+            await websocket.close(code=4404, reason="Room not found")
+            return
+
+        state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+        state_row = state_result.scalar_one_or_none()
+        initial_payload = state_row.payload if state_row else {}
+
+    await manager.connect_player(websocket, room_id)
+    await websocket.send_json({"event": "scene_state", "data": initial_payload})
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            if raw == "ping":
+                await websocket.send_json({"event": "pong"})
+                continue
+
+            try:
+                msg = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+
+            if msg.get("event") == "scene_update":
+                data = msg.get("data")
+                if data is None:
+                    data = {}
+                if not isinstance(data, dict):
+                    continue
+
+                async with sessionmaker() as session:
+                    st = await session.execute(select(RoomState).where(RoomState.room_id == room_id))
+                    row = st.scalar_one_or_none()
+                    if row:
+                        row.payload = data
+                    else:
+                        row = RoomState(room_id=room_id, payload=data)
+                        session.add(row)
+                    await session.commit()
+
+                await manager.broadcast_scene_update(room_id, data, exclude_websocket=websocket)
+
+    except WebSocketDisconnect:
+        manager.disconnect_player(websocket, room_id)
