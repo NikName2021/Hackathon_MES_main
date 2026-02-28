@@ -16,7 +16,7 @@ config = Config(".env")
 API_PREFIX = "/api"
 VERSION = "0.1.0"
 DEBUG: bool = config("DEBUG", cast=bool, default=False)
-SECRET_KEY: Secret = config("SECRET_KEY", cast=Secret, default="")
+SECRET_KEY: Secret = config("SECRET_KEY", cast=Secret, default="vhfhfhfhfh")
 MEMOIZATION_FLAG: bool = config("MEMOIZATION_FLAG", cast=bool, default=True)
 
 ALGORITHM = "HS256"

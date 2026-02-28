@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.responses import JSONResponse
 
-from database import User, Settings
+from database import User
 from helpers import create_jwt_token, create_refresh_token
 from repositories import UserRepository, UserDTO, SettingDTO, FavoritesDTO
 
@@ -26,12 +26,12 @@ class UserService:
 
         }
 
-    @staticmethod
-    def _form_setting(settings: Settings) -> dict:
-        return {
-            "id": settings.id,
-            "type_site": settings.type_site,
-        }
+    # @staticmethod
+    # def _form_setting(settings: Settings) -> dict:
+    #     return {
+    #         "id": settings.id,
+    #         "type_site": settings.type_site,
+    #     }
 
     @staticmethod
     def _form_favorite(favorite) -> dict:

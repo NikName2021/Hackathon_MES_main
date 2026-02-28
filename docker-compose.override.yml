@@ -33,22 +33,6 @@ services:
     networks:
       - hackathon_MES_net
 
-#  worker:
-#    container_name: statistics_worker
-#    build:
-#      context: src
-#    environment:
-#      PYTHONUNBUFFERED: 1
-#      PYTHONDONTWRITEBYTECODE: 1
-#    volumes:
-#      - ${PROJECT_VOLUME_SRC}:/app:cached
-#    command: python3 startup_worker.py
-#    depends_on:
-#      - postgres_pr
-#      - backend
-#    networks:
-#      - statistics_network
-
   frontend:
     build:
       context: spa
@@ -63,6 +47,56 @@ services:
       - backend
     networks:
       - hackathon_MES_net
+
+#  livekit:
+#    image: livekit/livekit-server:latest
+#    container_name: livekit
+#    # Используем массив аргументов вместо одной строки, чтобы избежать
+#    # ошибок декодирования команды в docker compose.
+#    # При необходимости замените 10.82.234.255 на актуальный IP вашего ПК.
+#    command:
+#      - --dev
+#      - --bind
+#      - 0.0.0.0
+#      - --node-ip
+#      - 83.136.235.126
+#      - khokhlovkirill.com
+#    ports:
+#      - "7880:7880"
+#      - "7881:7881/tcp"
+#      # RTC ports (default LiveKit): TCP 7881, UDP 7882
+#      - "7882:7882/udp"
+#    environment:
+#      - LIVEKIT_LOG_LEVEL=info
+#    restart: unless-stopped
+#
+#  token-server:
+#    build: ./token-server
+#    container_name: livekit-token-server
+#    ports:
+#      - "3001:3001"
+#    environment:
+#      - LIVEKIT_API_KEY=devkey
+#      - LIVEKIT_API_SECRET=secret
+#      - LIVEKIT_HOST=http://livekit:7880
+#      - LIVEKIT_WS_URL=wss:/voice-livekit.khokhlovkirill.com
+#      - PORT=3001
+#    depends_on:
+#      - livekit
+#
+#  web:
+#    build: ./web
+#    container_name: livekit-ptt-web
+#    environment:
+#      # Отдаём во фронтенд доменное имя сервера, чтобы к рации
+#      # можно было подключаться с любых устройств по адресу http://khokhlovkirill.com
+#      - VITE_TOKEN_SERVER_URL=https://voice-token.khokhlovkirill.com
+#      - VITE_LIVEKIT_WS_URL=ws://voice-livekit.khokhlovkirill.com
+#    depends_on:
+#      - token-server
+#    ports:
+#      - "5173:5173"
+
 
 volumes:
   hackathon_MES_vol:

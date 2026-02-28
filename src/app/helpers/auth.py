@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import pwd_context, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, async_get_db, security, \
     REFRESH_TOKEN_EXPIRE_DAYS
-from database import User, Role
+from database import User, RoleEnum, Admin
 
 
 def hash_password(password: str) -> str:
@@ -30,7 +30,7 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
     to_encode.update({"exp": expire, "type": "refresh"})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, str(SECRET_KEY), algorithm=ALGORITHM)
 
 def decode_token(token: str) -> dict | None:
     try:
@@ -57,10 +57,10 @@ async def get_current_user(
         )
 
     user_id = payload.get("user_id")
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(select(Admin).where(Admin.id == user_id))
     user = result.scalar_one_or_none()
 
-    if not user or not user.is_active:
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Пользователь не найден или деактивирован"
@@ -72,7 +72,7 @@ async def get_current_user(
 class RoleChecker:
     """Проверка ролей пользователя"""
 
-    def __init__(self, allowed_roles: list[Role]):
+    def __init__(self, allowed_roles: list[RoleEnum]):
         self.allowed_roles = allowed_roles
 
     def __call__(self, user: User = Depends(get_current_user)) -> User:

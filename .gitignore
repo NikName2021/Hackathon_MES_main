@@ -18,3 +18,4 @@ spa/package-lock.json
 /spa/dist/
 /spa/nginx/local_nginx.conf
 /server/
+/src/app/uploads/

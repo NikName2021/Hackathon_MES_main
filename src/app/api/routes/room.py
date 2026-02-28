@@ -1,0 +1,131 @@
+import uuid
+from pathlib import Path
+
+from fastapi import UploadFile, File, HTTPException, APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from core.config import async_get_db
+from database import User, Room, Invite, RoleEnum, Admin
+from helpers import get_current_user
+from schemas.rooms import RoomCreatedOut, InviteLinkOut, RoomStatusOut
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
+MAX_FILE_SIZE = 7 * 1024 * 1024
+ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
+BASE_URL = "http://localhost:8000"
+
+
+router = APIRouter(prefix="/room", tags=["Комнаты"])
+
+
+@router.post("/upload/image")
+async def upload_image(file: UploadFile = File(...)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Файл должен быть изображением. Получен: {file.content_type}"
+        )
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Недопустимое расширение '{ext}'. Разрешены: {ALLOWED_EXTENSIONS}"
+        )
+
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Файл слишком большой. Максимум: {MAX_FILE_SIZE // (1024 * 1024)} MB"
+        )
+
+    unique_filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = UPLOAD_DIR / unique_filename
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    return {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "size": len(content),
+        "content_type": file.content_type,
+        "url": f"/images/{unique_filename}"
+    }
+
+
+@router.get("/create-room", response_model=RoomCreatedOut)
+async def create_room(
+        current_user: Admin = Depends(get_current_user),
+        db: AsyncSession = Depends(async_get_db)
+
+):
+    """
+    Админ создаёт комнату.
+    Автоматически генерируются 4 invite-ссылки (по одной на каждую роль).
+    """
+    room = Room()
+    db.add(room)
+    await db.flush()
+
+    invites_out = []
+    for role_name in ROOM_ROLES:
+        invite = Invite(
+            room_id=room.id,
+            role=RoleEnum(role_name),
+        )
+        db.add(invite)
+        await db.flush()
+
+        invites_out.append(InviteLinkOut(
+            role=role_name,
+            invite_token=invite.token,
+            url=f"{BASE_URL}/invite/{invite.token}",
+        ))
+
+    await db.commit()
+
+    return RoomCreatedOut(
+        room_id=room.id,
+        invites=invites_out,
+    )
+
+
+@router.get("/rooms/{room_id}", response_model=RoomStatusOut)
+async def get_room_status(
+        room_id: str,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(async_get_db)
+):
+    """Посмотреть состояние комнаты: кто присоединился."""
+
+    result = await db.execute(
+        select(Room)
+        .options(selectinload(Room.invites))
+        .where(Room.id == room_id)
+    )
+    room = result.scalar_one_or_none()
+
+    if not room:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+
+    members = []
+    for inv in room.invites:
+        members.append({
+            "role": inv.role.value,
+            "is_used": inv.is_used,
+            "user_id": inv.user_id,
+            "invite_token": inv.token,
+        })
+
+    return RoomStatusOut(
+        room_id=room.id,
+        members=members,
+    )
