@@ -2,12 +2,15 @@ from typing import Callable
 
 from fastapi import FastAPI
 
-from core.config import engine
+from core.config import engine, sessionmaker
 from database import create_tables
+from database.seeder import run_seeder
 
 
 async def preload_model():
     await create_tables(engine)
+    async with sessionmaker() as session:
+        await run_seeder(session)
     """
     In order to load model on memory to each worker
     """
