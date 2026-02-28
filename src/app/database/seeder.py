@@ -1,93 +1,104 @@
-from sqlalchemy import select, or_
+import secrets
+import string
+
+import bcrypt
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from database import User, Admin
-from helpers import hash_password
+from database import Admin
 
-"""Артемка, Левка и Мишка не бейте( 
-В следующих коммитах поменяем"""
-
-
-SEED_USERS = [
-    {
-        "username": "admin",
-        "password": "admin123",
-
-    }
-]
+NUM_USERS = 1  # Количество генерируемых пользователей
+PASSWORD_LENGTH = 17
+USERNAME_PREFIX = "user"
 
 
-async def seed_users(db: AsyncSession) -> dict:
-    """Создаёт тестовых пользователей для каждой роли"""
+def generate_random_string(length: int, chars: str = string.ascii_letters + string.digits) -> str:
+    """Генерирует случайную строку заданной длины"""
+    return ''.join(secrets.choice(chars) for _ in range(length))
 
+
+def generate_username() -> str:
+    """Генерирует случайное имя пользователя"""
+    return f"{USERNAME_PREFIX}_{generate_random_string(8, string.ascii_lowercase + string.digits)}"
+
+
+def generate_password() -> str:
+    """Генерирует случайный пароль"""
+    # Обязательно включаем разные типы символов для надёжности
+    # chars = string.ascii_letters + string.digits + "!@#$%^&*"
+    # return generate_random_string(PASSWORD_LENGTH, chars)
+    """Надо подумать как лучше сделать с кешем"""
+    return "zDh1lbMu-2qQI"
+
+
+def generate_users(count: int) -> list[dict]:
+    """Генерирует список пользователей со случайными данными"""
+    users = []
+    for i in range(count):
+        users.append({
+            "username": generate_username(),
+            "password": generate_password(),
+        })
+    return users
+
+
+async def clear_all_users(db: AsyncSession) -> int:
+    """Удаляет всех существующих пользователей"""
+
+    # Для асинхронной версии
+    query = select(Admin)
+    result = await db.execute(query)
+    users = result.scalars().all()
+
+    for user in users:
+        await db.delete(user)
+
+    await db.commit()
+    return len(users)
+
+
+async def seed_users(db: AsyncSession, count: int = NUM_USERS) -> dict:
+    """Удаляет старых и создаёт новых тестовых пользователей"""
+
+    # Сначала удаляем всех существующих пользователей
+    deleted_count = await clear_all_users(db)
+    print(f"🗑️  Удалено старых пользователей: {deleted_count}")
+
+    # Генерируем новых пользователей
+    new_users = generate_users(count)
     created = []
-    skipped = []
 
-    for user_data in SEED_USERS:
-        query = select(Admin).where(
-            or_(
-                Admin.username == user_data["username"]
-            )
-        )
-
-        result = await db.execute(query)
-        existing = result.scalar_one_or_none()
-
-        if existing:
-            skipped.append(user_data["username"])
-            continue
-
+    for user_data in new_users:
+        salt = bcrypt.gensalt()
         user = Admin(
             username=user_data["username"],
-            hashed_password=user_data["password"],
+            hashed_password=bcrypt.hashpw(user_data["password"].encode('utf-8'), salt).decode('utf-8')
         )
-
         db.add(user)
-        created.append(user_data["username"])
+        created.append(user_data)
 
     await db.commit()
 
     return {
         "created": created,
-        "skipped": skipped,
+        "deleted_count": deleted_count,
     }
 
 
-async def clear_users(db: Session) -> int:
-    """Удаляет всех пользователей (осторожно!)"""
-    count = db.query(User).delete()
-    await db.commit()
-    return count
-
-
 async def run_seeder(db: AsyncSession):
+    """Запускает процесс сидинга"""
     try:
         print("🌱 Запуск сидера...")
-        print("-" * 40)
+        print("=" * 50)
 
         result = await seed_users(db)
 
         if result.get("created"):
-            print("✅ Созданы пользователи:")
-            for email in result["created"]:
-                print(f"   - {email}")
-
-        if result.get("skipped"):
-            print("⏭️  Пропущены (уже существуют):")
-            for email in result["skipped"]:
-                print(f"   - {email}")
-
-        print("-" * 40)
-        print("📋 Данные для входа:")
-        print()
-
-        for user_data in SEED_USERS:
-            print(f"   Email: {user_data['username']}")
-            print(f"   Password: {user_data['password']}")
-            print()
-
-        print("✨ Сидинг завершён!")
+            print(f"✅ Создано новых пользователей: {len(result['created'])}")
+            print("✨ Сидинг завершён!")
+            print("⚠️  Все старые пользователи были удалены!")
 
     except Exception as e:
         print(f"❌ Ошибка при сидинге: {e}")
+        import traceback
+        traceback.print_exc()

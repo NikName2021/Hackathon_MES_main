@@ -1,3 +1,4 @@
+import bcrypt
 import jwt
 from fastapi import HTTPException, status
 
@@ -33,10 +34,12 @@ class AuthService:
         admin = await self.repo.get_admin_by_username(user_data.username)
 
         """Артемка, Левка и Мишка не бейте( 
-        В следующих коммитах поменяем"""
-        if not admin or user_data.password != admin.hashed_password:
+        А все, я поправил)"""
 
-        # if not user or not verify_password(user_data.password, user.hashed_password):
+        stored_hash_bytes = admin.hashed_password.encode('utf-8')
+
+        if not admin or not bcrypt.checkpw(user_data.password.encode('utf-8'), stored_hash_bytes):
+
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Неверный username или пароль",

@@ -1,7 +1,8 @@
 import uuid
 from pathlib import Path
 
-from fastapi import UploadFile, File, HTTPException, APIRouter, Depends
+from fastapi import HTTPException
+from fastapi import UploadFile, File, APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -113,7 +114,6 @@ async def get_room_status(
     room = result.scalar_one_or_none()
 
     if not room:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     members = []
