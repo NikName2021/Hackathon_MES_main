@@ -57,6 +57,10 @@ body {
 }
 
 :root {
+  --accent: #01437b;
+  --accent-dark: #01315c;
+  --accent-light: #0a5a9e;
+  --accent-muted: rgba(1, 67, 123, 0.45);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

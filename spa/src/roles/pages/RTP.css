@@ -1,0 +1,175 @@
+/* Только раскладка; цвета — в roles-theme.css */
+.rtp-page {
+  min-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rtp-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.rtp-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+}
+
+.rtp-sidebar .panel-equipment {
+  flex: 0 1 auto;
+  max-height: 58vh;
+  min-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-hq {
+  flex-shrink: 0;
+}
+
+.combat-sections-status {
+  margin-top: 0.75rem;
+}
+
+.combat-sections-status .sections-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.combat-sections-status .sections-list li {
+  margin-bottom: 0.25rem;
+}
+
+.combat-sections-status .panel-hint {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.btn-create-hq {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+}
+
+.btn-create-hq:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vehicles-list,
+.nozzles-list {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.vehicle-otv {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--role-panel-border);
+}
+
+.vehicle-otv:last-child {
+  border-bottom: none;
+}
+
+.vehicle-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.otv-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.otv-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.otv-row span:first-child {
+  width: 40px;
+}
+
+.otv-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.otv-fill {
+  height: 100%;
+  transition: width 0.2s;
+}
+
+.otv-fill.foam {
+  background: #16a34a;
+}
+
+.otv-row span:last-child {
+  width: 35px;
+  text-align: right;
+}
+
+.rtp-scheme-area {
+  min-height: 0;
+}
+
+.scheme-header h3 {
+  font-size: 0.95rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.rtp-canvas {
+  flex: 1;
+  min-height: 300px;
+  margin-top: 1rem;
+}
+
+.scheme-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.scheme-zoom-controls button {
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.5rem;
+}
+
+.scheme-zoom-value {
+  min-width: 3rem;
+  text-align: center;
+}
+
+.scheme-lock-hint {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.scheme-zoom-divider {
+  padding: 0 0.25rem;
+}
+
+@media (max-width: 900px) {
+  .rtp-grid {
+    grid-template-columns: 1fr;
+  }
+}

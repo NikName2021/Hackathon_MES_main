@@ -9,6 +9,7 @@ export type InviteRoomResponse = {
   user_id: number;
   username: string;
   role: string;
+  room_id: string;
   tokens: InviteAccessToken;
   token_type: string;
 };

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.routes.user import get_auth_service
 from core.config import async_get_db
 from core.ws_manager import manager
-from database import Invite, User, ROLES_NEX
+from database import Invite, User
 from schemas import JoinResponse
 from services import AuthService
 
@@ -77,10 +77,11 @@ async def join_room(
     })
 
     return JoinResponse(
-        message=f"Добро пожаловать, {username}! Вы — {ROLES_NEX[invite.role.value]}",
+        message=f"Добро пожаловать, {username}! Вы — {invite.role.value}",
         user_id=user.id,
         username=user.username,
-        role=ROLES_NEX[invite.role.value],
+        role=invite.role.value,
+        room_id=invite.room_id,
         tokens=tokens,
     )
 
