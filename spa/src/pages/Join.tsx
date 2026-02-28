@@ -17,6 +17,18 @@ export function JoinPage() {
     setError("");
     setLoading(true);
     try {
+      if (!inviteToken.trim() || !username.trim()) {
+        setError("Некорректный логин или пароль");
+        return
+      }
+      if (inviteToken.trim().length > 33) {
+        setError("длина токена не превышает 33 символа");
+        return
+      }
+      if (username.trim().length > 15) {
+        setError("длина логина не превышает 15 символов");
+        return
+      }
       await getInviteRoom(inviteToken, username);
       navigate(PATHS.INVITE.replace(":tokenId", inviteToken));
     } catch (err) {
@@ -42,7 +54,7 @@ export function JoinPage() {
               autoFocus
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              placeholder="Имя"
+              placeholder="Логин"
               className="h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500"
             />
             <Input
