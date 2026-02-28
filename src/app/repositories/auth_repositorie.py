@@ -1,7 +1,7 @@
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import User, AdminIssuedJWTToken, Admin
+from database import User, AdminIssuedJWTToken, Admin, UserIssuedJWTToken
 
 
 class AuthRepository:
@@ -31,7 +31,7 @@ class AuthRepository:
         await self.db.refresh(user)
         return user
 
-    async def save_token(self, token: AdminIssuedJWTToken) -> None:
+    async def save_token(self, token: AdminIssuedJWTToken | UserIssuedJWTToken) -> None:
         self.db.add(token)
         await self.db.commit()
 

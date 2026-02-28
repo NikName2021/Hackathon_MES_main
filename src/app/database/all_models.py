@@ -55,19 +55,19 @@ class User(DeclBase):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     invite = relationship("Invite", back_populates="user", uselist=False)
-    # user_refresh_tokens = relationship("UserIssuedJWTToken", cascade="all,delete", back_populates="user")
+    user_refresh_tokens = relationship("UserIssuedJWTToken", cascade="all,delete", back_populates="user_tk")
 
 
-# class UserIssuedJWTToken(DeclBase):
-#     __tablename__ = "user_issued_jwt_token"
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     user = Column(Integer, ForeignKey("users.id"))
-#     jti = Column(String)
-#     revoked = Column(Boolean, default=False)
-#     created_date = Column(DateTime, default=datetime.datetime.now)
-#     modificated_date = Column(DateTime, default=datetime.datetime.now)
-#
-#     user = relationship("User", back_populates="user_refresh_tokens")
+class UserIssuedJWTToken(DeclBase):
+    __tablename__ = "user_issued_jwt_token"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user = Column(Integer, ForeignKey("users.id"))
+    jti = Column(String)
+    revoked = Column(Boolean, default=False)
+    created_date = Column(DateTime, default=datetime.datetime.now)
+    modificated_date = Column(DateTime, default=datetime.datetime.now)
+
+    user_tk = relationship("User", back_populates="user_refresh_tokens")
 
 
 class AdminIssuedJWTToken(DeclBase):

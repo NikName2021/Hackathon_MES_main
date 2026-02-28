@@ -1,10 +1,11 @@
 import jwt
 from fastapi import HTTPException, status
+
 from core.config import SECRET_KEY, ALGORITHM
-from database import User, RoleEnum, AdminIssuedJWTToken, Admin
-from helpers import hash_password, verify_password, create_access_token, create_refresh_token
-from schemas import UserCreate, UserLogin, Token, UserResponse
+from database import AdminIssuedJWTToken, Admin, UserIssuedJWTToken
+from helpers import create_access_token, create_refresh_token
 from repositories import AuthRepository
+from schemas import UserLogin, Token, UserResponse
 
 
 class AuthService:
@@ -89,4 +90,20 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token,
             user=UserResponse.model_validate(admin)
+        )
+
+    async def generate_user_token(self, payload) -> Token:
+
+        access_token = create_access_token(payload)
+        refresh_token = create_refresh_token(payload)
+
+        token_obj = UserIssuedJWTToken(
+            user=payload["sub"],
+            jti=refresh_token
+        )
+        await self.repo.save_token(token_obj)
+
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token
         )
