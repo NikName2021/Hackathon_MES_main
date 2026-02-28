@@ -10,9 +10,10 @@ import type { CanvasObject } from "@/types/canvas.types";
 
 const API_URL = (import.meta.env.VITE_API_URL as string)?.trim() || "";
 
-
+// Всегда заканчиваем на /, чтобы относительные пути (room/create-room) собирались в /api/v1/room/create-room
+const base = API_URL ? `${API_URL.replace(/\/$/, "")}/api/v1` : "/api/v1";
 export const api = axios.create({
-  baseURL: API_URL ? `${API_URL.replace(/\/$/, "")}/api/v1` : "/api/v1",
+  baseURL: base.endsWith("/") ? base : `${base}/`,
 });
 
 export const apiAuth = {
