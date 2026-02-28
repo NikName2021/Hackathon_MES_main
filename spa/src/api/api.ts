@@ -1,6 +1,8 @@
 import axios from "axios";
 import { withAuth } from "@/utils/withAuth";
 import { setToken } from "@/store/auth";
+import { setRoomData } from "@/store/room";
+import type { RoomData } from "@/types/room.types";
 
 const API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 
@@ -47,21 +49,11 @@ export async function loginRequest(login: string, password: string) {
   }
 }
 
-interface IvitedRole {
-  role: string;
-  invite_token: string;
-  url: string;
-}
-
-interface RoomLoginResponse {
-  room_id: string;
-  invites: IvitedRole[];
-}
-
 export async function createRoom() {
   try {
-    const { data } = await apiAuth.get<RoomLoginResponse>("room/create-room");
-    console.log(data);
+    const { data } = await apiAuth.get<RoomData>("room/create-room");
+    setRoomData(data);
+    return data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const payload = error.response?.data as

@@ -1,51 +1,24 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-const DEFAULT_ROOM_ID = "ROOM-1234";
-const FALLBACK_BASE_URL = "http://localhost:5173";
-
-type Role = "DISPATCHER" | "RTP" | "NSH";
-
-const INVITES: { role: Role; label: string; token: string }[] = [
-  { role: "DISPATCHER", label: "Диспетчер (Д)", token: "TOKEN-D-AAAA" },
-  {
-    role: "RTP",
-    label: "Руководитель тушения пожара (РТП)",
-    token: "TOKEN-RTP-BBBB",
-  },
-  { role: "NSH", label: "Начальник штаба (НШ)", token: "TOKEN-NSH-CCCC" },
-];
+import { useRoomId, useRoomInvites } from "@/store/room";
 
 export const RoomPage = () => {
-  const { roomId } = useParams();
-  const [copiedRole, setCopiedRole] = useState<Role | null>(null);
+  const { roomId: paramRoomId } = useParams();
+  const storedRoomId = useRoomId();
+  const invites = useRoomInvites();
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const roomCode = roomId ?? DEFAULT_ROOM_ID;
-  const baseUrl =
-    typeof window === "undefined" ? FALLBACK_BASE_URL : window.location.origin;
+  const roomCode = paramRoomId ?? storedRoomId ?? "—";
 
-  const links = useMemo(
-    () =>
-      INVITES.map((invite) => ({
-        ...invite,
-        url: `${baseUrl}/join?room=${encodeURIComponent(
-          roomCode
-        )}&role=${encodeURIComponent(invite.role)}&token=${encodeURIComponent(
-          invite.token
-        )}`,
-      })),
-    [baseUrl, roomCode]
-  );
-
-  async function copy(text: string, role: Role) {
+  async function copy(text: string, key: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setCopiedRole(role);
+      setCopiedKey(key);
       window.setTimeout(
-        () => setCopiedRole((current) => (current === role ? null : current)),
+        () => setCopiedKey((current) => (current === key ? null : current)),
         1200
       );
     } catch {
@@ -83,40 +56,58 @@ export const RoomPage = () => {
         </section>
 
         <section className="grid gap-4">
-          {links.map((link) => (
-            <div
-              key={link.role}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20 backdrop-blur"
-            >
-              <div className="flex flex-col gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-orange-300/80">
-                    Роль
-                  </p>
-                  <div className="mt-2 text-lg font-semibold">{link.label}</div>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Input
-                    value={link.url}
-                    readOnly
-                    onFocus={(event) => event.currentTarget.select()}
-                    className="h-11 border-white/20 bg-white/95 text-slate-900"
-                  />
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-11 min-w-[150px] border-white/30 bg-white/10 text-white hover:bg-white/20"
-                    onClick={() => copy(link.url, link.role)}
-                  >
-                    {copiedRole === link.role ? "Скопировано" : "Скопировать"}
-                  </Button>
-                </div>
-                <p className="text-xs text-white/60">
-                  Скопируйте ссылку и передайте её участнику.
-                </p>
-              </div>
+          {invites.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
+              Нет данных по приглашениям.
             </div>
-          ))}
+          ) : (
+            invites.map((invite) => (
+              <div
+                key={`${invite.role}-${invite.invite_token}`}
+                className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20 backdrop-blur"
+              >
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-orange-300/80">
+                      Роль
+                    </p>
+                    <div className="mt-2 text-lg font-semibold">
+                      {invite.role}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-orange-300/80">
+                      Токен
+                    </p>
+                    <div className="mt-2 text-sm font-semibold text-white/90">
+                      {invite.invite_token}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Input
+                      value={invite.url}
+                      readOnly
+                      onFocus={(event) => event.currentTarget.select()}
+                      className="h-11 border-white/20 bg-white/95 text-slate-900"
+                    />
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="h-11 min-w-[150px] border-white/30 bg-white/10 text-white hover:bg-white/20"
+                      onClick={() => copy(invite.url, invite.invite_token)}
+                    >
+                      {copiedKey === invite.invite_token
+                        ? "Скопировано"
+                        : "Скопировать"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-white/60">
+                    Скопируйте ссылку и передайте её участнику.
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
         </section>
 
         <p className="text-xs text-white/50">
