@@ -1,21 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 
-import { createRoom } from "@/api";
 import { Button } from "@/components/ui/button";
 import { PATHS } from "@/config/paths";
 import { LoginButton } from "@/components/LoginButton";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const handleCreateRoom = async () => {
-    try {
-      const data = await createRoom();
-      if (data?.room_id) {
-        navigate(`${PATHS.ROOM}/${data.room_id}`);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleCreateRoom = () => {
+   navigate(PATHS.OPTIONS)
   };
 
   return (

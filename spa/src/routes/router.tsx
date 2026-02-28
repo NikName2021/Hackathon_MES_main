@@ -6,7 +6,7 @@ import { RoomPage } from "@/pages/Room";
 import { PATHS } from "../config/paths";
 import { LoginPage } from "@/pages/Login";
 import { InvitePage } from "@/pages/Invite";
-import { OptionsRoom } from "@/pages/OptionsRoom";
+import { OptionsRoomPage } from "@/pages/OptionsRoom";
 
 export function AppRouter() {
   const navigations = [
@@ -16,7 +16,7 @@ export function AppRouter() {
     { path: PATHS.LOGIN, element: <LoginPage /> },
     { path: PATHS.INVITE, element: <InvitePage /> },
     { path: PATHS.JOIN_ID, element: <JoinPage /> },
-    { path: PATHS.OPTIONS, element: <OptionsRoom /> },
+    { path: PATHS.OPTIONS, element: <OptionsRoomPage /> },
   ] as const;
 
   return (
