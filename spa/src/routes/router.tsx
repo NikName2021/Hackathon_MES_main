@@ -9,7 +9,7 @@ export function AppRouter() {
   const navigations = [
     { path: PATHS.ROOT, element: <HomePage /> },
     { path: PATHS.JOIN, element: <JoinPage /> },
-    { path: PATHS.ROOM, element: <RoomPage /> },
+    { path: PATHS.ROOM_ID, element: <RoomPage /> },
   ] as const;
 
   return (

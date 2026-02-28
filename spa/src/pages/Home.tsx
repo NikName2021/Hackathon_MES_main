@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { PATHS } from "@/config/paths";
 
 export function HomePage() {
-  const createRoom = PATHS.ROOM.replace(":roomId", "create");
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
@@ -14,7 +13,7 @@ export function HomePage() {
           className="h-12 px-8 text-base bg-gradient-to-r from-amber-600 via-orange-600 to-rose-500 text-white shadow-lg shadow-orange-500/30 hover:from-amber-500 hover:via-orange-500 hover:to-rose-400"
           asChild
         >
-          <Link to={createRoom}>Создать комнату</Link>
+          <Link to={PATHS.ROOM + '/1'}>Создать комнату</Link>
         </Button>
         <Button
           size="lg"

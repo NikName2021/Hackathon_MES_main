@@ -1,5 +1,6 @@
 export const PATHS = {
     ROOT: "/",
     JOIN: "/join",
-    ROOM: "/room/:roomId",
+    ROOM: "/room",
+    ROOM_ID: "/room/:roomId",
 }
