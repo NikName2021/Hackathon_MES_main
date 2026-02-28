@@ -89,3 +89,35 @@ export async function getInviteRoom(inviteToken: string, username: string) {
     throw new Error("Ошибка входа");
   }
 }
+
+export async function registerParams(room_id: string, serviceability_water: boolean, wind: number, temperature: number, time: string) {
+  try {
+    await apiAuth.post("room_params/room-params", { room_id, serviceability_water, wind, temperature, time });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message || "Ошибка входа");
+    }
+    throw new Error("Ошибка входа");
+  }
+}
+
+export async function registerImage(room_id: string, file: File) {
+  try {
+    await apiAuth.post(`room_params/${room_id}/map`, { room_id, file });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message || "Ошибка входа");
+    }
+    throw new Error("Ошибка входа");
+  }
+}
