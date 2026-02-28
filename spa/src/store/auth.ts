@@ -20,7 +20,7 @@ const useAuthStore = create<AuthState>()(
       clearToken: () => set({ token: null }),
     }),
     {
-      name: "auth-token",
+      name: "auth-token", 
     }
   )
 );

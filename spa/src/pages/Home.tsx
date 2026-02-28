@@ -7,7 +7,9 @@ import { LoginButton } from "@/components/LoginButton";
 export function HomePage() {
   const navigate = useNavigate();
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+    <main className="relative min-h-screen overflow-hidden">
+
+      
       <div className="absolute top-4 right-4 z-50">
         <LoginButton onClick={() => navigate(PATHS.LOGIN)} />
       </div>
