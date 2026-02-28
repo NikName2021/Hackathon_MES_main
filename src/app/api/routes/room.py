@@ -40,10 +40,9 @@ async def create_room(
 
     invites_out = []
     for role_name in ROOM_ROLES:
-        role_value = getattr(RoleEnum, role_name)
         invite = Invite(
             room_id=room.id,
-            role=role_value
+            role=RoleEnum(role_name),
         )
         db.add(invite)
         await db.flush()
