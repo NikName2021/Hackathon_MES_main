@@ -2,6 +2,7 @@ import axios from "axios";
 import { withAuth } from "@/utils/withAuth";
 import { setToken } from "@/store/auth";
 import { setRoomData, setRoomId } from "@/store/room";
+import { setCanvasObjects } from "@/store/canvas";
 import { setPlayerData } from "@/store/player";
 import type { RoomData, roomId } from "@/types/room.types";
 import type { InviteRoomResponse } from "@/types/invite.types";
@@ -94,6 +95,13 @@ export async function getInviteRoom(inviteToken: string, username: string) {
       params: { invite_token: inviteToken, username },
     });
     setPlayerData(data, inviteToken);
+    const accessToken =
+      data.tokens?.access_token ??
+      (data as unknown as { access_token?: { access_token?: string } })
+        .access_token?.access_token;
+    if (accessToken) {
+      setToken(accessToken);
+    }
     console.log(data);
     return data;
   } catch (error) {
@@ -152,3 +160,82 @@ export async function registerImage(room_id: string, objects: CanvasObject[]) {
     throw new Error("Ошибка входа");
   }
 }
+
+
+interface CanvasObjectResponse {
+  objects: CanvasObject[]
+  room_id: string
+}
+export async function getRoomObjects(room_id: string) {
+  try {
+    const { data } = await apiAuth.get<CanvasObjectResponse>(`room_params/${room_id}/objects`);
+    const objects = Array.isArray(data.objects) ? data.objects : [];
+    const normalized = objects
+      .filter((obj): obj is CanvasObject => Boolean(obj && obj.type))
+      .map((obj) => {
+        const rotation = (obj as { rotation?: number }).rotation ?? 0;
+        const color = (obj as { color?: string }).color ?? "#F97316";
+        if (obj.type === "line") {
+          return {
+            ...obj,
+            x1: Number(obj.x1) || 0,
+            y1: Number(obj.y1) || 0,
+            x2: Number(obj.x2) || 0,
+            y2: Number(obj.y2) || 0,
+            strokeWidth: Number(obj.strokeWidth) || 2,
+            rotation,
+            color,
+          } as CanvasObject;
+        }
+        if (obj.type === "rect") {
+          return {
+            ...obj,
+            x: Number(obj.x) || 0,
+            y: Number(obj.y) || 0,
+            width: Math.abs(Number(obj.width) || 0),
+            height: Math.abs(Number(obj.height) || 0),
+            strokeWidth: Number(obj.strokeWidth) || 2,
+            rotation,
+            color,
+          } as CanvasObject;
+        }
+        if (obj.type === "circle") {
+          return {
+            ...obj,
+            x: Number(obj.x) || 0,
+            y: Number(obj.y) || 0,
+            radius: Math.abs(Number(obj.radius) || 0),
+            strokeWidth: Number(obj.strokeWidth) || 2,
+            rotation,
+            color,
+          } as CanvasObject;
+        }
+        if (obj.type === "fire") {
+          return {
+            ...obj,
+            x: Number(obj.x) || 0,
+            y: Number(obj.y) || 0,
+            radius: Math.abs(Number(obj.radius) || 8),
+            rotation,
+            color: (obj as { color?: string }).color ?? "#EF4444",
+          } as CanvasObject;
+        }
+        return null;
+      })
+      .filter(Boolean) as CanvasObject[];
+    setCanvasObjects(normalized);
+    return normalized;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message)
+    }
+    throw new Error("неизвестная ошибка");
+  }
+}
+
+

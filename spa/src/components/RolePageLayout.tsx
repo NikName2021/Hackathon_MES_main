@@ -1,5 +1,8 @@
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import { getRoomObjects } from "@/api";
 import { usePlayerData } from "@/store/player";
+import { useRoomId } from "@/store/room";
 import { RadioWidget } from "./RadioWidget";
 
 type RolePageLayoutProps = {
@@ -12,6 +15,25 @@ type RolePageLayoutProps = {
  */
 export function RolePageLayout({ children }: RolePageLayoutProps) {
   const data = usePlayerData();
+  const roomId = useRoomId();
+  const activeRoomId = data?.room_id ?? roomId;
+  const fetchedRoomId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!activeRoomId) return;
+    if (fetchedRoomId.current === activeRoomId) return;
+    fetchedRoomId.current = activeRoomId;
+    let active = true;
+
+    getRoomObjects(activeRoomId).then(() => {
+      if (!active) return;
+    })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [activeRoomId]);
 
   return (
     <>
