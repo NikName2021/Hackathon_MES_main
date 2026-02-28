@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+from schemas import Token
+
 
 class InviteLinkOut(BaseModel):
     role: str
@@ -15,11 +17,11 @@ class RoomCreatedOut(BaseModel):
 
 class JoinResponse(BaseModel):
     message: str
-    user_id: str
+    user_id: int
     username: str
     room_id: str
     role: str
-    access_token: str
+    tokens: Token
     token_type: str = "bearer"
 
 

@@ -1,13 +1,15 @@
 import uuid
 from pathlib import Path
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 from fastapi import UploadFile, File, APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from core.config import async_get_db
+from core.config import async_get_db, BASE_URL
+from core.ws_manager import manager
 from database import User, Room, Invite, RoleEnum, Admin
 from helpers import get_current_user
 from schemas.rooms import RoomCreatedOut, InviteLinkOut, RoomStatusOut
@@ -18,7 +20,6 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
 MAX_FILE_SIZE = 7 * 1024 * 1024
 ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
-BASE_URL = "http://localhost:8000"
 
 
 router = APIRouter(prefix="/room", tags=["Комнаты"])
@@ -129,3 +130,60 @@ async def get_room_status(
         room_id=room.id,
         members=members,
     )
+
+
+@router.websocket("/ws/room/{room_id}")
+async def admin_room_websocket(
+        websocket: WebSocket,
+        room_id: str,
+        token: str = Query(default=""),
+        db: AsyncSession = Depends(async_get_db)
+):
+    """
+    WebSocket для админа.
+    Подключение: ws://localhost:8000/admin/ws/room/{room_id}?token=admin-secret-token
+""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3NzIyODE2OTB9.qjtscLtnXdTa3B686TLwBrH-JIo2u97NmBCA44miy8U"
+    Админ получает события в реальном времени:
+    - player_joined
+    - room_full
+    """
+    result = await db.execute(
+        select(Room).options(selectinload(Room.invites)).where(Room.id == room_id)
+    )
+    room = result.scalar_one_or_none()
+
+    if not room:
+        await websocket.close(code=4004, reason="Room not found")
+        return
+
+    # 3. Подключаем админа
+    await manager.connect_admin(websocket, room_id)
+
+    # 4. Отправляем текущее состояние комнаты
+    members = []
+    for inv in room.invites:
+        members.append({
+            "role": inv.role.value,
+            "is_used": inv.is_used,
+            "user_id": inv.user_id,
+        })
+
+    await websocket.send_json({
+        "event": "room_state",
+        "data": {
+            "room_id": room.id,
+            "members": members,
+            "members_count": sum(1 for m in members if m["is_used"]),
+            "total": 4,
+        }
+    })
+    try:
+        while True:
+            # Ждём сообщения от админа (ping/pong или команды)
+            data = await websocket.receive_text()
+
+            if data == "ping":
+                await websocket.send_json({"event": "pong"})
+
+    except WebSocketDisconnect:
+        manager.disconnect_admin(websocket, room_id)

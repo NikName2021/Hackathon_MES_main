@@ -61,8 +61,8 @@ async def seed_users(db: AsyncSession, count: int = NUM_USERS) -> dict:
     """Удаляет старых и создаёт новых тестовых пользователей"""
 
     # Сначала удаляем всех существующих пользователей
-    deleted_count = await clear_all_users(db)
-    print(f"🗑️  Удалено старых пользователей: {deleted_count}")
+    # deleted_count = await clear_all_users(db)
+    # print(f"🗑️  Удалено старых пользователей: {deleted_count}")
 
     # Генерируем новых пользователей
     new_users = generate_users(count)
@@ -81,7 +81,7 @@ async def seed_users(db: AsyncSession, count: int = NUM_USERS) -> dict:
 
     return {
         "created": created,
-        "deleted_count": deleted_count,
+        # "deleted_count": deleted_count,
     }
 
 

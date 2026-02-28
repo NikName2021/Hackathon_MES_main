@@ -33,13 +33,10 @@ class AuthService:
     async def authenticate_user(self, user_data: UserLogin) -> Token:
         admin = await self.repo.get_admin_by_username(user_data.username)
 
-        """Артемка, Левка и Мишка не бейте( 
-        А все, я поправил)"""
-
-        stored_hash_bytes = admin.hashed_password.encode('utf-8')
-
-        if not admin or not bcrypt.checkpw(user_data.password.encode('utf-8'), stored_hash_bytes):
-
+        if not admin or not bcrypt.checkpw(
+                user_data.password.encode('utf-8'),
+                admin.hashed_password.encode('utf-8')
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Неверный username или пароль",

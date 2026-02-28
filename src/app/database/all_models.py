@@ -38,7 +38,6 @@ class Invite(DeclBase):
     is_used = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    # Кто воспользовался ссылкой
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     room = relationship("Room", back_populates="invites")

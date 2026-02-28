@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.routes.user import get_auth_service
 from core.config import async_get_db
+from core.ws_manager import manager
 from database import Invite, User
 from schemas import JoinResponse
 from services import AuthService
@@ -45,12 +46,35 @@ async def join_room(
     db.add(user)
     await db.flush()
 
-    # invite.is_used = True
+    invite.is_used = True
     # invite.user_id = user.id
 
     await db.commit()
 
-    tokens = service.generate_user_token({
+    # 4. Считаем сколько уже в комнате
+    count_result = await db.execute(
+        select(func.count()).select_from(Invite).where(
+            Invite.room_id == invite.room_id,
+            Invite.is_used == True,
+        )
+    )
+    members_count = count_result.scalar()
+
+    # ─────────────────────────────────────────
+    # 5. УВЕДОМЛЯЕМ АДМИНА ЧЕРЕЗ WEBSOCKET
+    # ─────────────────────────────────────────
+    await manager.notify_player_joined(
+        room_id=invite.room_id,
+        user_id=user.id,
+        username=username,
+        role=invite.role.value,
+        members_count=members_count,
+    )
+
+    if members_count >= 4:
+        await manager.notify_room_full(invite.room_id)
+
+    tokens = await service.generate_user_token({
         "sub": user.id,
         "username": user.username,
         "room_id": user.room_id,

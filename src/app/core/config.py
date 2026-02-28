@@ -19,6 +19,7 @@ DEBUG: bool = config("DEBUG", cast=bool, default=False)
 SECRET_KEY: Secret = config("SECRET_KEY", cast=Secret, default="vhfhfhfhfh")
 MEMOIZATION_FLAG: bool = config("MEMOIZATION_FLAG", cast=bool, default=True)
 
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
@@ -34,7 +35,8 @@ POSTGRES_USER: str = config("POSTGRES_USER", cast=str, default="postgres")
 POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", cast=str, default="<PASSWORD>")
 POSTGRES_DB: str = config("POSTGRES_DATABASE", cast=str, default="postgres")
 
-BOT_TOKEN: str = config("BOT_TOKEN", cast=str, default="")
+APP_DOMAIN: str = config("APP_DOMAIN", cast=str, default="")
+BASE_URL = f"https://{APP_DOMAIN}"
 
 engine = create_async_engine(
     get_db_path(POSTGRES_USER, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB,
