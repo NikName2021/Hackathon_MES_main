@@ -12,10 +12,11 @@ DeclBase = declarative_base()
 
 
 class RoleEnum(str, Enum):
-    leader = "leader"
-    analyst = "analyst"
-    developer = "developer"
-    tester = "tester"
+    dispatcher = "Диспетчер"
+    rtp = "РТП"
+    headquarters = "штаб"
+    by1 = "БУ1"
+    by2 = "БУ2"
 
 
 class Room(DeclBase):

@@ -19,7 +19,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
 MAX_FILE_SIZE = 7 * 1024 * 1024
-ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
+ROOM_ROLES = ["dispatcher", "rtp", "headquarters", "by1", "by2"]
 
 
 router = APIRouter(prefix="/room", tags=["Комнаты"])
