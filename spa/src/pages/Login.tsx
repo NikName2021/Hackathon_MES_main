@@ -22,6 +22,7 @@ export function LoginPage() {
 
     try {
       await loginRequest(login, password);
+      setIsChangeToken(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка входа");
     } finally {

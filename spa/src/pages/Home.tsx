@@ -6,10 +6,12 @@ import { LoginButton } from "@/components/LoginButton";
 
 export function HomePage() {
   const navigate = useNavigate();
+  const handleCreateRoom = () => {
+    navigate(PATHS.ROOM + "/1");
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden">
-
-      
       <div className="absolute top-4 right-4 z-50">
         <LoginButton onClick={() => navigate(PATHS.LOGIN)} />
       </div>
@@ -20,9 +22,9 @@ export function HomePage() {
             <Button
               size="lg"
               className="h-12 px-8 text-base bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
-              asChild
+              onClick={handleCreateRoom}
             >
-              <Link to={PATHS.ROOM + "/1"}>Создать комнату</Link>
+              Создать комнату
             </Button>
             <Button
               size="lg"
