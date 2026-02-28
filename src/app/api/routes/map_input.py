@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import HTTPException, Depends
@@ -6,18 +7,18 @@ from fastapi import UploadFile, File, APIRouter
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
 
 from core.config import async_get_db
-from database import Room, RoomParams, RoomMap
+from database import Room, RoomParams, RoomMap, RoomObjects
 from helpers import require_admin, require_admin_or_any_user
-from schemas import ParamsMapOut, CreateParamsMap, UpdateParamsMap
+from schemas import ParamsMapOut, CreateParamsMap, UpdateParamsMap, RoomObjectsIn, RoomObjectsOut
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
 MAX_FILE_SIZE = 7 * 1024 * 1024
-ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
 
 router = APIRouter(prefix="/room_params", tags=["Параметры комнаты"])
 
@@ -135,6 +136,73 @@ async def get_room_map_info(
 
 
 # ──────────────────────────────────────
+#  СПИСОК ОБЪЕКТОВ КОМНАТЫ
+# ──────────────────────────────────────
+
+
+@router.post("/{room_id}/objects", response_model=RoomObjectsOut)
+async def save_room_objects(
+        room_id: str,
+        data: RoomObjectsIn,
+        _: object = Depends(require_admin),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Принять список объектов с фронта и сохранить по комнате.
+    Если запись уже есть — перезаписываем payload.
+    """
+    # Убедимся, что комната существует
+    result = await db.execute(select(Room).where(Room.id == room_id))
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+
+    result = await db.execute(select(RoomObjects).where(RoomObjects.room_id == room_id))
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        existing.payload = data.objects
+        await db.commit()
+        await db.refresh(existing)
+        obj = existing
+    else:
+        obj = RoomObjects(
+            room_id=room_id,
+            payload=data.objects,
+        )
+        db.add(obj)
+        await db.commit()
+        await db.refresh(obj)
+
+    return RoomObjectsOut(
+        room_id=room_id,
+        objects=obj.payload,
+    )
+
+
+@router.get("/{room_id}/objects", response_model=RoomObjectsOut)
+async def get_room_objects(
+        room_id: str,
+        _: object = Depends(require_admin_or_any_user),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Отдать список объектов по id комнаты.
+    Если данных ещё нет — вернём пустой список.
+    """
+    result = await db.execute(select(RoomObjects).where(RoomObjects.room_id == room_id))
+    obj = result.scalar_one_or_none()
+
+    if not obj:
+        return RoomObjectsOut(room_id=room_id, objects=[])
+
+    return RoomObjectsOut(
+        room_id=room_id,
+        objects=obj.payload,
+    )
+
+
+# ──────────────────────────────────────
 #  ПАРАМЕТРЫ КАРТЫ: создание
 # ──────────────────────────────────────
 
@@ -172,7 +240,7 @@ async def create_room_params(
     # 3. Создаём параметры
     params = RoomParams(
         room_id=data.room_id,
-        time=data.time,
+        time=datetime.now(),
         wind=data.wind,
         temperature=data.temperature,
         serviceability_water=data.serviceability_water,
@@ -181,8 +249,7 @@ async def create_room_params(
     await db.commit()
     await db.refresh(params)
 
-    return params
-
+    return JSONResponse(content={"status": "success"})
 
 
 @router.get("/room-params/{room_id}", response_model=ParamsMapOut)

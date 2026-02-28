@@ -48,7 +48,7 @@ export function JoinPage() {
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
           <ButtonBack />
-          <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
+          <div className="text-xs uppercase tracking-[0.3em] text-[var(--accent-light)] font-medium">
             Приглашение
           </div>
           <h1 className="mt-3 text-2xl font-semibold">
@@ -78,7 +78,8 @@ export function JoinPage() {
             type="button"
             size="lg"
             onClick={handleJoin}
-            className="mt-6 h-12 w-full bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-base text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
+            className="mt-6 h-12 w-full text-base text-white shadow-lg hover:opacity-95 transition-opacity"
+            style={{ background: "linear-gradient(135deg, var(--accent-dark) 0%, var(--accent-light) 100%)", boxShadow: "0 4px 20px var(--accent-muted)" }}
             disabled={loading}
           >
             {loading ? "Подключаем..." : "Подключиться"}

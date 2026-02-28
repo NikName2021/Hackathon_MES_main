@@ -5,6 +5,7 @@ import bcrypt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import ADMIN_PASSWORD, ADMIN_USERNAME
 from database import Admin
 
 NUM_USERS = 1  # Количество генерируемых пользователей
@@ -85,18 +86,32 @@ async def seed_users(db: AsyncSession, count: int = NUM_USERS) -> dict:
     }
 
 
+async def ensure_default_admin(db: AsyncSession) -> None:
+    """Создаёт админа admin/admin, если такого ещё нет (для входа и создания комнат)."""
+
+    result = await db.execute(select(Admin).where(Admin.username == ADMIN_USERNAME))
+    if result.scalar_one_or_none() is not None:
+        return
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(ADMIN_PASSWORD.encode("utf-8"), salt).decode("utf-8")
+    admin = Admin(username=ADMIN_USERNAME, hashed_password=hashed)
+    db.add(admin)
+    await db.commit()
+
+
 async def run_seeder(db: AsyncSession):
     """Запускает процесс сидинга"""
     try:
         print("🌱 Запуск сидера...")
         print("=" * 50)
 
-        result = await seed_users(db)
+        await ensure_default_admin(db)
+        # result = await seed_users(db)
 
-        if result.get("created"):
-            print(f"✅ Создано новых пользователей: {len(result['created'])}")
-            print("✨ Сидинг завершён!")
-            print("⚠️  Все старые пользователи были удалены!")
+        # if result.get("created"):
+        #     print(f"✅ Создано новых пользователей: {len(result['created'])}")
+        print("✨ Сидинг завершён!")
+        print("⚠️  Все старые пользователи были удалены!")
 
     except Exception as e:
         print(f"❌ Ошибка при сидинге: {e}")

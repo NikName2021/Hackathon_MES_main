@@ -3,7 +3,16 @@ import { useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioWidget } from "@/components/RadioWidget";
 import { useRoomId, useRoomInvites } from "@/store/room";
+
+const ROLE_LABELS: Record<string, string> = {
+  dispatcher: "Диспетчер",
+  rtp: "Руководитель тушения пожара",
+  headquarters: "Штаб",
+  by1: "Боевой участок 1",
+  by2: "Боевой участок 2",
+};
 
 export const RoomPage = () => {
   const { roomId: paramRoomId } = useParams();
@@ -32,7 +41,7 @@ export const RoomPage = () => {
         <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--accent-light)] font-medium">
                 Оперативный штаб
               </p>
               <h1 className="mt-3 text-3xl font-semibold">
@@ -48,7 +57,7 @@ export const RoomPage = () => {
                 {roomCode}
               </div>
               <div className="mt-4 text-xs text-white/60">Ваша роль</div>
-              <div className="mt-1 text-sm font-semibold text-orange-300">
+                <div className="mt-1 text-sm font-semibold text-[var(--accent-light)]">
                 Администратор
               </div>
             </div>
@@ -68,15 +77,15 @@ export const RoomPage = () => {
               >
                 <div className="flex flex-col gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-orange-300/80">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
                       Роль
                     </p>
                     <div className="mt-2 text-lg font-semibold">
-                      {invite.role}
+                      {ROLE_LABELS[invite.role] ?? invite.role}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-orange-300/80">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
                       Токен
                     </p>
                     <div className="mt-2 text-sm font-semibold text-white/90">
@@ -114,6 +123,20 @@ export const RoomPage = () => {
           Заглушка: ссылки и токены — константы. Позже код комнаты и токены будут
           генерироваться и проверяться на бэкенде.
         </p>
+
+        {roomCode && roomCode !== "—" && (
+          <>
+            <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
+                Рация
+              </p>
+              <p className="mt-2 text-sm text-white/70">
+                Кнопка «Рация» внизу справа — подключение к каналу комнаты. После подключения вы увидите список участников и того, кто сейчас говорит.
+              </p>
+            </section>
+            <RadioWidget roomId={roomCode} identity="admin" isAdmin={true} />
+          </>
+        )}
       </div>
     </main>
   );

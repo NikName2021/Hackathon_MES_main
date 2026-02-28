@@ -38,7 +38,7 @@ class AuthRepository:
     async def get_valid_refresh_token(self, token_jti: str, user_id: int) -> AdminIssuedJWTToken | None:
         query = select(AdminIssuedJWTToken).where(
             AdminIssuedJWTToken.jti == token_jti,
-            AdminIssuedJWTToken.user_id == user_id,
+            AdminIssuedJWTToken.admin_id == user_id,
             AdminIssuedJWTToken.revoked.is_(False)
         )
         result = await self.db.execute(query)

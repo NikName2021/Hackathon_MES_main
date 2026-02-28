@@ -22,7 +22,8 @@ export function HomePage() {
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
               size="lg"
-              className="h-12 px-8 text-base bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
+              className="h-12 px-8 text-base text-white shadow-lg hover:opacity-95 transition-opacity"
+              style={{ background: "linear-gradient(135deg, var(--accent-dark) 0%, var(--accent-light) 100%)", boxShadow: "0 4px 20px var(--accent-muted)" }}
               onClick={handleCreateRoom}
             >
               Создать комнату

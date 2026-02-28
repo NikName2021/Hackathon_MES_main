@@ -54,3 +54,4 @@ pydantic[email]
 passlib==1.7.4
 python-multipart
 bcrypt
+uvicorn[standard]

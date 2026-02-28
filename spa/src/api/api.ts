@@ -7,11 +7,11 @@ import type { RoomData, roomId } from "@/types/room.types";
 import type { InviteRoomResponse } from "@/types/invite.types";
 import type { CanvasObject } from "@/types/canvas.types";
 
-const API_URL =
-  (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+const API_URL = (import.meta.env.VITE_API_URL as string)?.trim() || "";
+
 
 export const api = axios.create({
-  baseURL: `${API_URL}/api/v1`,
+  baseURL: API_URL ? `${API_URL.replace(/\/$/, "")}/api/v1` : "/api/v1",
 });
 
 export const apiAuth = {

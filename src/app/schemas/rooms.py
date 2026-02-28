@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -19,8 +20,10 @@ class InputMapDetails(BaseModel):
 
 class RoomCreatedOut(BaseModel):
     room_id: str
-    invites: list[InviteLinkOut]
 
+
+class RoomAddCreated(BaseModel):
+    invites: list[InviteLinkOut]
 
 class JoinResponse(BaseModel):
     message: str
@@ -40,7 +43,7 @@ class RoomStatusOut(BaseModel):
 class CreateParamsMap(BaseModel):
     """Входные данные от админа."""
     room_id: str
-    time: datetime
+    time: str
     wind: float = Field(..., ge=0, description="Скорость ветра (м/с)")
     temperature: float = Field(..., description="Температура (°C)")
     serviceability_water: bool = Field(..., description="Исправность водоснабжения")
@@ -49,7 +52,6 @@ class CreateParamsMap(BaseModel):
         "json_schema_extra": {
             "example": {
                 "room_id": "abc123",
-                "time": "2025-06-28T14:30:00",
                 "wind": 5.2,
                 "temperature": 22.5,
                 "serviceability_water": True,
@@ -62,7 +64,7 @@ class ParamsMapOut(BaseModel):
     """Ответ после сохранения."""
     id: str
     room_id: str
-    time: datetime
+    time: str
     wind: float
     temperature: float
     serviceability_water: bool
@@ -74,7 +76,20 @@ class ParamsMapOut(BaseModel):
 
 class UpdateParamsMap(BaseModel):
     """Частичное обновление параметров."""
-    time: datetime | None = None
+    time: str | None = None
     wind: float | None = Field(None, ge=0)
     temperature: float | None = None
     serviceability_water: bool | None = None
+
+
+class RoomObjectsIn(BaseModel):
+    """
+    Список объектов, приходящий с фронта.
+    Храним как есть, без жёсткой схемы.
+    """
+    objects: list[dict[str, Any]]
+
+
+class RoomObjectsOut(BaseModel):
+    room_id: str
+    objects: list[dict[str, Any]]
