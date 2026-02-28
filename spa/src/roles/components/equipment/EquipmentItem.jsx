@@ -1,17 +1,23 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import './EquipmentItem.css'
 
 /**
  * Элемент справочника: символ + tooltip при наведении с ТТХ.
  * Поддержка drag для перетаскивания на схему.
+ * Тултип рендерится в document.body через портал, чтобы не смещаться из-за transform у предков.
  */
 function EquipmentItem({ item, blockId, disabled }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
+  const tooltipOffset = 6
 
   const handleMouseEnter = (e) => {
     const rect = e.currentTarget.getBoundingClientRect()
-    setTooltipPos({ x: rect.left, y: rect.bottom + 4 })
+    setTooltipPos({
+      x: rect.left,
+      y: rect.bottom + tooltipOffset,
+    })
     setShowTooltip(true)
   }
 
@@ -56,17 +62,23 @@ function EquipmentItem({ item, blockId, disabled }) {
         className="equipment-item-img"
         draggable={false}
       />
-      {showTooltip && (
-        <div
-          className="equipment-tooltip"
-          style={{ left: tooltipPos.x, top: tooltipPos.y }}
-        >
-          <div className="equipment-tooltip-name">{item.name}</div>
-          {item.ttx && (
-            <div className="equipment-tooltip-ttx">{item.ttx}</div>
-          )}
-        </div>
-      )}
+      {showTooltip &&
+        createPortal(
+          <div
+            className="equipment-tooltip"
+            style={{
+              position: 'fixed',
+              left: tooltipPos.x,
+              top: tooltipPos.y,
+            }}
+          >
+            <div className="equipment-tooltip-name">{item.name}</div>
+            {item.ttx && (
+              <div className="equipment-tooltip-ttx">{item.ttx}</div>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
