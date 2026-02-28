@@ -6,4 +6,5 @@ export const PATHS = {
     LOGIN: "/login",
     ROOM_ID: "/room/:roomId",
     INVITE: "/invite/:tokenId",
+    OPTIONS: "/options",
 }
