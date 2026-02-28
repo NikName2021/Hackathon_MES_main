@@ -5,6 +5,7 @@ import { JoinPage } from "@/pages/Join";
 import { RoomPage } from "@/pages/Room";
 import { PATHS } from "../config/paths";
 import { LoginPage } from "@/pages/Login";
+import { InvitePage } from "@/pages/Invite";
 
 export function AppRouter() {
   const navigations = [
@@ -12,6 +13,7 @@ export function AppRouter() {
     { path: PATHS.JOIN, element: <JoinPage /> },
     { path: PATHS.ROOM_ID, element: <RoomPage /> },
     { path: PATHS.LOGIN, element: <LoginPage /> },
+    { path: PATHS.INVITE, element: <InvitePage /> },
   ] as const;
 
   return (
