@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PATHS } from "@/config/paths";
 import { RoomCanvasEditor } from "@/components/RoomCanvasEditor";
-import { useCanvasObjects } from "@/store/canvas";
+import { clearCanvas, useCanvasObjects } from "@/store/canvas";
 import {
   setOptionHasWaterNearby,
   setOptionTemperature,
@@ -60,6 +60,7 @@ export const OptionsRoomPage = () => {
         Number(temperature),
         time,
       );
+      clearCanvas()
       setStep("image");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Ошибка отправки");
