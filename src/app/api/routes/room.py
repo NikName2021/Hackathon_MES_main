@@ -1,8 +1,7 @@
-import uuid
 from pathlib import Path
 
+from fastapi import APIRouter, Depends
 from fastapi import HTTPException, Query
-from fastapi import UploadFile, File, APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -19,8 +18,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
 MAX_FILE_SIZE = 7 * 1024 * 1024
-ROOM_ROLES = ["dispatcher", "rtp", "headquarters", "by1", "by2"]
-
+ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
 
 router = APIRouter(prefix="/room", tags=["Комнаты"])
 

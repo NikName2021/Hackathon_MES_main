@@ -11,12 +11,21 @@ from sqlalchemy.orm import declarative_base, relationship
 DeclBase = declarative_base()
 
 
+# class RoleEnum(str, Enum):
+#     dispatcher = "Диспетчер"
+#     rtp = "РТП"
+#     headquarters = "штаб"
+#     by1 = "БУ1"
+#     by2 = "БУ2"
+
+
 class RoleEnum(str, Enum):
-    dispatcher = "Диспетчер"
-    rtp = "РТП"
-    headquarters = "штаб"
-    by1 = "БУ1"
-    by2 = "БУ2"
+    leader = "leader"
+    analyst = "analyst"
+    developer = "developer"
+    tester = "tester"
+
+
 
 
 class Room(DeclBase):
