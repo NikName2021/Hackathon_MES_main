@@ -3,11 +3,13 @@ from pathlib import Path
 
 from fastapi import HTTPException, Depends
 from fastapi import UploadFile, File, APIRouter
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import async_get_db
-from database import Room, RoomParams
+from database import Room, RoomParams, RoomMap
+from helpers import require_admin, require_admin_or_any_user
 from schemas import ParamsMapOut, CreateParamsMap, UpdateParamsMap
 
 UPLOAD_DIR = Path("uploads")
@@ -17,18 +19,36 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
 MAX_FILE_SIZE = 7 * 1024 * 1024
 ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
 
-router = APIRouter(prefix="/room", tags=["Комнаты"])
+router = APIRouter(prefix="/room_params", tags=["Параметры комнаты"])
 
 
-@router.post("/upload/image")
-async def upload_image(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
+@router.post("/{room_id}/map")
+async def add_room_map(
+        room_id: str,
+        file: UploadFile = File(...),
+        _: object = Depends(require_admin),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Добавить карту к комнате. Только админ. Одна карта на комнату, изменить нельзя.
+    """
+    result = await db.execute(select(Room).where(Room.id == room_id))
+    room = result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+
+    result = await db.execute(select(RoomMap).where(RoomMap.room_id == room_id))
+    existing = result.scalar_one_or_none()
+    if existing:
         raise HTTPException(
             status_code=400,
-            detail=f"Файл должен быть изображением. Получен: {file.content_type}"
+            detail="Карта для этой комнаты уже добавлена. Изменить нельзя."
         )
 
-    ext = Path(file.filename).suffix.lower()
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Файл должен быть изображением")
+
+    ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
@@ -44,23 +64,84 @@ async def upload_image(file: UploadFile = File(...)):
 
     unique_filename = f"{uuid.uuid4().hex}{ext}"
     file_path = UPLOAD_DIR / unique_filename
+    file_path.write_bytes(content)
 
-    with open(file_path, "wb") as f:
-        f.write(content)
+    room_map = RoomMap(
+        room_id=room_id,
+        filename=unique_filename,
+        original_filename=file.filename or "map",
+        content_type=file.content_type,
+        size=len(content),
+    )
+    db.add(room_map)
+    await db.commit()
+    await db.refresh(room_map)
 
     return {
-        "filename": unique_filename,
-        "original_filename": file.filename,
-        "size": len(content),
-        "content_type": file.content_type,
-        "url": f"/images/{unique_filename}"
+        "id": room_map.id,
+        "room_id": room_map.room_id,
+        "filename": room_map.filename,
+        "original_filename": room_map.original_filename,
+        "size": room_map.size,
+        "content_type": room_map.content_type,
+        "url": f"/room/{room_id}/map",
     }
 
+
+@router.get("/{room_id}/map")
+async def get_room_map(
+        room_id: str,
+        _: object = Depends(require_admin_or_any_user),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """Получить карту комнаты по room_id."""
+    result = await db.execute(select(RoomMap).where(RoomMap.room_id == room_id))
+    room_map = result.scalar_one_or_none()
+    if not room_map:
+        raise HTTPException(status_code=404, detail="Карта не найдена")
+
+    file_path = UPLOAD_DIR / room_map.filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Файл карты не найден на диске")
+
+    return FileResponse(
+        path=file_path,
+        media_type=room_map.content_type,
+        filename=room_map.original_filename,
+    )
+
+
+@router.get("/{room_id}/map/info")
+async def get_room_map_info(
+        room_id: str,
+        _: object = Depends(require_admin_or_any_user),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """Получить метаданные карты (без скачивания файла)."""
+    result = await db.execute(select(RoomMap).where(RoomMap.room_id == room_id))
+    room_map = result.scalar_one_or_none()
+    if not room_map:
+        raise HTTPException(status_code=404, detail="Карта не найдена")
+
+    return {
+        "id": room_map.id,
+        "room_id": room_map.room_id,
+        "filename": room_map.filename,
+        "original_filename": room_map.original_filename,
+        "size": room_map.size,
+        "content_type": room_map.content_type,
+        "url": f"/room/{room_id}/map",
+    }
+
+
+# ──────────────────────────────────────
+#  ПАРАМЕТРЫ КАРТЫ: создание
+# ──────────────────────────────────────
 
 @router.post("/room-params", response_model=ParamsMapOut)
 async def create_room_params(
         data: CreateParamsMap,
-        _: dict = Depends(verify_admin),
+        _: object = Depends(require_admin),
         db: AsyncSession = Depends(async_get_db),
 ):
     """
@@ -107,7 +188,7 @@ async def create_room_params(
 @router.get("/room-params/{room_id}", response_model=ParamsMapOut)
 async def get_room_params(
         room_id: str,
-        _: dict = Depends(verify_admin),
+        _: object = Depends(require_admin),
         db: AsyncSession = Depends(async_get_db),
 ):
     """Получить параметры карты комнаты."""
@@ -123,15 +204,12 @@ async def get_room_params(
     return params
 
 
-# ──────────────────────────────────────
-#  ПАРАМЕТРЫ КАРТЫ: обновление
-# ──────────────────────────────────────
 
 @router.patch("/room-params/{room_id}", response_model=ParamsMapOut)
 async def update_room_params(
         room_id: str,
         data: UpdateParamsMap,
-        _: dict = Depends(verify_admin),
+        _: object = Depends(require_admin),
         db: AsyncSession = Depends(async_get_db),
 ):
     """Частично обновить параметры карты."""

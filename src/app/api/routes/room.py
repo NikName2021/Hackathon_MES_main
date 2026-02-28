@@ -11,7 +11,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from core.config import async_get_db, BASE_URL
 from core.ws_manager import manager
 from database import User, Room, Invite, RoleEnum, Admin
-from helpers import get_current_user
+from helpers import require_admin, require_admin_or_any_user
 from schemas.rooms import RoomCreatedOut, InviteLinkOut, RoomStatusOut
 
 UPLOAD_DIR = Path("uploads")
@@ -25,46 +25,9 @@ ROOM_ROLES = ["leader", "analyst", "developer", "tester"]
 router = APIRouter(prefix="/room", tags=["Комнаты"])
 
 
-@router.post("/upload/image")
-async def upload_image(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Файл должен быть изображением. Получен: {file.content_type}"
-        )
-
-    ext = Path(file.filename).suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Недопустимое расширение '{ext}'. Разрешены: {ALLOWED_EXTENSIONS}"
-        )
-
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Файл слишком большой. Максимум: {MAX_FILE_SIZE // (1024 * 1024)} MB"
-        )
-
-    unique_filename = f"{uuid.uuid4().hex}{ext}"
-    file_path = UPLOAD_DIR / unique_filename
-
-    with open(file_path, "wb") as f:
-        f.write(content)
-
-    return {
-        "filename": unique_filename,
-        "original_filename": file.filename,
-        "size": len(content),
-        "content_type": file.content_type,
-        "url": f"/images/{unique_filename}"
-    }
-
-
 @router.get("/create-room", response_model=RoomCreatedOut)
 async def create_room(
-        current_user: Admin = Depends(get_current_user),
+        current_user: Admin = Depends(require_admin),
         db: AsyncSession = Depends(async_get_db)
 
 ):
@@ -88,7 +51,7 @@ async def create_room(
         invites_out.append(InviteLinkOut(
             role=role_name,
             invite_token=invite.token,
-            url=f"{BASE_URL}/invite/{invite.token}",
+            url=f"{BASE_URL}/join/{invite.token}",
         ))
 
     await db.commit()
@@ -102,7 +65,7 @@ async def create_room(
 @router.get("/rooms/{room_id}", response_model=RoomStatusOut)
 async def get_room_status(
         room_id: str,
-        current_user: User = Depends(get_current_user),
+        current_user: User | Admin = Depends(require_admin_or_any_user),
         db: AsyncSession = Depends(async_get_db)
 ):
     """Посмотреть состояние комнаты: кто присоединился."""

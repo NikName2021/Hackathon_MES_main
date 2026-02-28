@@ -27,6 +27,8 @@ class Room(DeclBase):
     invites = relationship("Invite", back_populates="room", cascade="all, delete-orphan")
     params = relationship("RoomParams", back_populates="room", uselist=False,
                           cascade="all, delete-orphan")
+    room_map = relationship("RoomMap", back_populates="room", uselist=False,
+                            cascade="all, delete-orphan")
 
 
 class Invite(DeclBase):
@@ -109,6 +111,21 @@ class RoomParams(DeclBase):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     room = relationship("Room", back_populates="params")
+
+
+class RoomMap(DeclBase):
+    """Одна карта на комнату. После добавления изменить нельзя."""
+    __tablename__ = "room_maps"
+
+    id = Column(String, primary_key=True, default=lambda: uuid.uuid4().hex)
+    room_id = Column(String, ForeignKey("rooms.id"), unique=True, nullable=False)
+    filename = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    content_type = Column(String, nullable=False)
+    size = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    room = relationship("Room", back_populates="room_map")
 
 async def create_tables(engine: AsyncEngine):
     # DeclBase.metadata.create_all()
