@@ -5,8 +5,10 @@ import { setRoomData, setRoomId } from "@/store/room";
 import { setPlayerData } from "@/store/player";
 import type { RoomData, roomId } from "@/types/room.types";
 import type { InviteRoomResponse } from "@/types/invite.types";
+import type { CanvasObject } from "@/types/canvas.types";
 
-const API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+const API_URL =
+  (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
@@ -17,7 +19,6 @@ export const apiAuth = {
   post: <T>(url: string, data?: unknown, config = {}) =>
     api.post<T>(url, data, withAuth(config)),
 };
-
 
 interface User {
   id: number;
@@ -93,7 +94,7 @@ export async function getInviteRoom(inviteToken: string, username: string) {
       params: { invite_token: inviteToken, username },
     });
     setPlayerData(data, inviteToken);
-    console.log(data)
+    console.log(data);
     return data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -108,9 +109,21 @@ export async function getInviteRoom(inviteToken: string, username: string) {
   }
 }
 
-export async function registerParams(room_id: string, serviceability_water: boolean, wind: number, temperature: number, time: string) {
+export async function registerParams(
+  room_id: string,
+  serviceability_water: boolean,
+  wind: number,
+  temperature: number,
+  time: string,
+) {
   try {
-    await apiAuth.post("room_params/room-params", { room_id, serviceability_water, wind, temperature, time });
+    await apiAuth.post("room_params/room-params", {
+      room_id,
+      serviceability_water,
+      wind,
+      temperature,
+      time,
+    });
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const payload = error.response?.data as
@@ -124,9 +137,9 @@ export async function registerParams(room_id: string, serviceability_water: bool
   }
 }
 
-export async function registerImage(room_id: string, file: File) {
+export async function registerImage(room_id: string, objects: CanvasObject[]) {
   try {
-    await apiAuth.post(`room_params/${room_id}/map`, { room_id, file });
+    await apiAuth.post(`room_params/${room_id}/objects`, { room_id, objects });
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const payload = error.response?.data as

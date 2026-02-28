@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PATHS } from "@/config/paths";
 import { RoomCanvasEditor } from "@/components/RoomCanvasEditor";
+import { useCanvasObjects } from "@/store/canvas";
 import {
   setOptionHasWaterNearby,
   setOptionTemperature,
   setOptionTime,
   setOptionWind,
   useOptionHasWaterNearby,
-  useOptionFile,
   useOptionTemperature,
   useOptionTime,
   useOptionWind,
@@ -25,7 +25,7 @@ export const OptionsRoomPage = () => {
   const temperature = useOptionTemperature();
   const time = useOptionTime();
   const hasWaterNearby = useOptionHasWaterNearby();
-  const file = useOptionFile();
+  const objects = useCanvasObjects();
   const roomId = useRoomId();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("params");
@@ -74,13 +74,14 @@ export const OptionsRoomPage = () => {
       setError("Не найден идентификатор комнаты.");
       return;
     }
-    if (!file) {
-      setError("Добавьте файл карты.");
+    if (objects.length === 0) {
+      setError("Добавьте объекты на карту.");
       return;
     }
     try {
       setLoading(true);
-      await registerImage(roomId, file);
+      console.log(roomId, objects);
+      await registerImage(roomId, objects);
       setStep("final");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Ошибка загрузки");
