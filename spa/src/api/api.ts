@@ -1,18 +1,25 @@
-import { setToken } from "@/store/auth";
 import axios from "axios";
+import { withAuth } from "@/utils/withAuth";
+import { setToken } from "@/store/auth";
 
-const API_URL =
-  (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
+const API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 
-const api = axios.create({
-  baseURL: `${API_URL}api/v1/`,
+export const api = axios.create({
+  baseURL: `${API_URL}/api/v1`,
 });
+
+export const apiAuth = {
+  get: <T>(url: string, config = {}) => api.get<T>(url, withAuth(config)),
+  post: <T>(url: string, data?: unknown, config = {}) =>
+    api.post<T>(url, data, withAuth(config)),
+};
+
 
 interface User {
   id: number;
   username: string;
 }
-interface LoginResponse {
+interface UserLoginResponse {
   access_token?: string;
   token_type?: string;
   user: User;
@@ -20,7 +27,7 @@ interface LoginResponse {
 
 export async function loginRequest(login: string, password: string) {
   try {
-    const { data } = await api.post<LoginResponse>("auth/login", {
+    const { data } = await api.post<UserLoginResponse>("auth/login", {
       username: login,
       password,
     });
@@ -40,4 +47,30 @@ export async function loginRequest(login: string, password: string) {
   }
 }
 
-export { API_URL };
+interface IvitedRole {
+  role: string;
+  invite_token: string;
+  url: string;
+}
+
+interface RoomLoginResponse {
+  room_id: string;
+  invites: IvitedRole[];
+}
+
+export async function createRoom() {
+  try {
+    const { data } = await apiAuth.get<RoomLoginResponse>("room/create-room");
+    console.log(data);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message || "Ошибка входа");
+    }
+    throw new Error("Ошибка входа");
+  }
+}

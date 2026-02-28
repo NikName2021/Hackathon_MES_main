@@ -44,12 +44,21 @@ export function LoginPage() {
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         {token && !isChangeToken ? (
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
+            <div className="flex justify-start">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                className="mb-6 inline-flex h-9 gap-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
+              >
+                <MoveLeft className="h-4 w-4" />
+                Назад
+              </Button>
+            </div>
             <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
               Доступ
             </div>
-            <h1 className="mt-3 text-2xl font-semibold">
-              Вы уже вошли в систему
-            </h1>
+            <h1 className="mt-3 text-2xl font-semibold">Вы вошли в систему</h1>
             <p className="mt-3 text-sm text-white/70">
               Можете продолжить работу или войти под другим аккаунтом.
             </p>
