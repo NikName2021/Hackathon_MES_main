@@ -19,8 +19,10 @@ class InputMapDetails(BaseModel):
 
 class RoomCreatedOut(BaseModel):
     room_id: str
-    invites: list[InviteLinkOut]
 
+
+class RoomAddCreated(BaseModel):
+    invites: list[InviteLinkOut]
 
 class JoinResponse(BaseModel):
     message: str

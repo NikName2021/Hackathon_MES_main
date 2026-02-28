@@ -18,6 +18,14 @@ class RoleEnum(str, Enum):
     by1 = "БУ1"
     by2 = "БУ2"
 
+ROLES_NEX = {
+    "dispatcher": "Диспетчер",
+    "rtp":"РТП",
+    "headquarters": "Штаб",
+    "by1": "БУ1",
+    "by2": "БУ2"
+}
+
 # class RoleEnum(str, Enum):
 #     dispatcher = "dispatcher"
 #     rtp = "rtp"

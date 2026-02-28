@@ -11,7 +11,7 @@ from core.config import async_get_db, BASE_URL
 from core.ws_manager import manager
 from database import User, Room, Invite, RoleEnum, Admin
 from helpers import require_admin, require_admin_or_any_user
-from schemas.rooms import RoomCreatedOut, InviteLinkOut, RoomStatusOut
+from schemas.rooms import RoomCreatedOut, InviteLinkOut, RoomStatusOut, RoomAddCreated
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -32,11 +32,37 @@ async def create_room(
 ):
     """
     Админ создаёт комнату.
-    Автоматически генерируются 4 invite-ссылки (по одной на каждую роль).
     """
     room = Room()
     db.add(room)
-    await db.flush()
+
+    await db.commit()
+
+    return RoomCreatedOut(
+        room_id=room.id,
+    )
+
+
+@router.get("/add_users/{room_id}", response_model=RoomAddCreated)
+async def get_room_status(
+        room_id: str,
+        current_user: Admin = Depends(require_admin),
+        db: AsyncSession = Depends(async_get_db)
+
+):
+    """
+    Админ создаёт комнату.
+    Автоматически генерируются 4 invite-ссылки (по одной на каждую роль).
+    """
+
+    result = await db.execute(
+        select(Room)
+        .where(Room.id == room_id)
+    )
+    room = result.scalar_one_or_none()
+
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
 
     invites_out = []
     for role_name in ROOM_ROLES:
@@ -56,10 +82,10 @@ async def create_room(
 
     await db.commit()
 
-    return RoomCreatedOut(
-        room_id=room.id,
+    return RoomAddCreated(
         invites=invites_out,
     )
+
 
 
 @router.get("/rooms/{room_id}", response_model=RoomStatusOut)
@@ -105,7 +131,6 @@ async def admin_room_websocket(
     """
     WebSocket для админа.
     Подключение: ws://localhost:8000/admin/ws/room/{room_id}?token=admin-secret-token
-""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3NzIyODE2OTB9.qjtscLtnXdTa3B686TLwBrH-JIo2u97NmBCA44miy8U"
     Админ получает события в реальном времени:
     - player_joined
     - room_full
@@ -142,7 +167,6 @@ async def admin_room_websocket(
     })
     try:
         while True:
-            # Ждём сообщения от админа (ping/pong или команды)
             data = await websocket.receive_text()
 
             if data == "ping":
