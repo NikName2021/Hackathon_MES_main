@@ -38,20 +38,12 @@ export function InvitePage() {
                 {data.username}
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-xs text-white/60">Room ID</div>
-                <div className="mt-2 font-semibold text-white">
-                  {data.room_id}
-                </div>
-              </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="text-xs text-white/60">Роль</div>
                 <div className="mt-2 font-semibold text-white">
                   {data.role}
                 </div>
               </div>
-            </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <div className="text-xs text-white/60">Invite Token</div>
               <div className="mt-2 font-mono text-xs text-white">

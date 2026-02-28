@@ -5,6 +5,7 @@ import { getInviteRoom } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PATHS } from "@/config/paths";
+import { ButtonBack } from "@/components/ButtonBack";
 
 export function JoinPage() {
   const navigate = useNavigate();
@@ -19,15 +20,15 @@ export function JoinPage() {
     try {
       if (!inviteToken.trim() || !username.trim()) {
         setError("Некорректный логин или пароль");
-        return
+        return;
       }
       if (inviteToken.trim().length > 33) {
         setError("длина токена не превышает 33 символа");
-        return
+        return;
       }
       if (username.trim().length > 15) {
         setError("длина логина не превышает 15 символов");
-        return
+        return;
       }
       await getInviteRoom(inviteToken, username);
       navigate(PATHS.INVITE.replace(":tokenId", inviteToken));
@@ -42,6 +43,7 @@ export function JoinPage() {
     <main className="relative min-h-screen overflow-hidden">
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
+          <ButtonBack />
           <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
             Приглашение
           </div>
