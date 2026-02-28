@@ -1,0 +1,7 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+shapely==2.0.6
+numpy==1.26.4
+scikit-image==0.24.0
+matplotlib==3.9.0
+
