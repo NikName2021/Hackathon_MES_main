@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { getInviteRoom } from "@/api";
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,18 @@ export function JoinPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const {tokenId} = useParams()
   const handleJoin = async () => {
     setError("");
     setLoading(true);
+
+    const token = tokenId ? tokenId : inviteToken
     try {
-      if (!inviteToken.trim() || !username.trim()) {
+      if (!token.trim() || !username.trim()) {
         setError("Некорректный логин или пароль");
         return;
       }
-      if (inviteToken.trim().length > 33) {
+      if (token.trim().length > 33) {
         setError("длина токена не превышает 33 символа");
         return;
       }
@@ -30,8 +33,9 @@ export function JoinPage() {
         setError("длина логина не превышает 15 символов");
         return;
       }
-      await getInviteRoom(inviteToken, username);
-      navigate(PATHS.INVITE.replace(":tokenId", inviteToken));
+      console.log(token, username)
+      await getInviteRoom(token, username);
+      navigate(PATHS.INVITE.replace(":tokenId", token));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка входа");
     } finally {
@@ -60,8 +64,9 @@ export function JoinPage() {
               className="h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500"
             />
             <Input
-              value={inviteToken}
+              value={tokenId ? tokenId : inviteToken}
               onChange={(event) => setInviteToken(event.target.value)}
+              disabled = {!!tokenId}
               placeholder="Токен"
               className="h-12 rounded-xl border-white/20 bg-white/95 text-base text-slate-900 placeholder:text-slate-500"
             />

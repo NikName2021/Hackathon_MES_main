@@ -14,6 +14,7 @@ export function AppRouter() {
     { path: PATHS.ROOM_ID, element: <RoomPage /> },
     { path: PATHS.LOGIN, element: <LoginPage /> },
     { path: PATHS.INVITE, element: <InvitePage /> },
+    {path: PATHS.JOIN_ID, element: <JoinPage /> },
   ] as const;
 
   return (
