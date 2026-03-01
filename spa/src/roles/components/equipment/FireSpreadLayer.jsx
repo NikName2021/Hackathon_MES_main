@@ -106,7 +106,7 @@ export default function FireSpreadLayer({ roomId, zoom = 1 }) {
       className="scheme-canvas-overlay fire-spread-layer"
       viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
       preserveAspectRatio="none"
-      style={{ pointerEvents: 'none', zIndex: 2 }}
+      style={{ pointerEvents: 'none', zIndex: 1 }}
     >
       {buildingPath && (
         <path

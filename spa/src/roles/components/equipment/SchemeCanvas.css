@@ -39,6 +39,7 @@
   font-size: 0.9rem;
 }
 
+/* z-index выше слоя огня (fire-spread-layer), чтобы перетаскивание элементов всегда работало */
 .scheme-item {
   position: absolute;
   width: 56px;
@@ -47,6 +48,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10;
 }
 
 .scheme-item::before {
