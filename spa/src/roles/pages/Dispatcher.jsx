@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { DISPATCH_VEHICLES } from '../data/vehicleConfig'
 import { getRouteDuration } from '../api/geo2gis'
-import { postDispatcherDispatch } from '@/api'
+import { postDispatcherDispatch, createDispatcherAction, getDispatcherActionsByRoom } from '@/api'
 import { usePlayerData } from '@/store/player'
 import { useRoomId } from '@/store/room'
 import '../roles-theme.css'
@@ -40,6 +40,9 @@ function Dispatcher() {
     action: '',
     time: '',
   })
+  const [protocolLoading, setProtocolLoading] = useState(false)
+  const [protocolSubmitting, setProtocolSubmitting] = useState(false)
+  const [protocolError, setProtocolError] = useState(null)
 
   const [dispatchQuantities, setDispatchQuantities] = useState({})
   const [dispatchEta, setDispatchEta] = useState({})
@@ -63,10 +66,56 @@ function Dispatcher() {
     setProtocolForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleAddProtocolRow = () => {
+  const fetchProtocol = useCallback(async () => {
+    if (!roomId) return
+    setProtocolLoading(true)
+    setProtocolError(null)
+    try {
+      const actions = await getDispatcherActionsByRoom(roomId)
+      setProtocolRows(actions)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Ошибка загрузки протокола'
+      setProtocolError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+      setProtocolRows([])
+    } finally {
+      setProtocolLoading(false)
+    }
+  }, [roomId])
+
+  useEffect(() => {
+    fetchProtocol()
+  }, [fetchProtocol])
+
+  const handleAddProtocolRow = async () => {
     if (!protocolForm.callsign || !protocolForm.action || !protocolForm.time) return
-    setProtocolRows((prev) => [...prev, { ...protocolForm, id: prev.length + 1 }])
-    setProtocolForm({ callsign: '', action: '', time: '' })
+    if (!roomId) {
+      setProtocolError('Не найден идентификатор комнаты. Войдите по ссылке приглашения.')
+      return
+    }
+    const user_id = playerData?.user_id
+    if (user_id == null) {
+      setProtocolError('Не найден идентификатор пользователя.')
+      return
+    }
+    setProtocolError(null)
+    setProtocolSubmitting(true)
+    const dateStr = `${new Date().toISOString().slice(0, 10)}T${protocolForm.time}:00`
+    try {
+      await createDispatcherAction({
+        room_id: roomId,
+        user_id,
+        call_sign: protocolForm.callsign,
+        action: protocolForm.action,
+        date: dateStr,
+      })
+      setProtocolForm({ callsign: '', action: '', time: '' })
+      await fetchProtocol()
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Ошибка при добавлении записи'
+      setProtocolError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    } finally {
+      setProtocolSubmitting(false)
+    }
   }
 
   const handleDispatchQtyChange = (vehicleId, value) => {
@@ -381,6 +430,11 @@ function Dispatcher() {
           <div className="dispatcher-bottom">
             <section className="panel panel-protocol">
               <h3>Протокол действий диспетчера</h3>
+              {protocolError && (
+                <p className="dispatch-route-error" role="alert">
+                  {protocolError}
+                </p>
+              )}
               <div className="protocol-form">
                 <input
                   type="text"
@@ -399,8 +453,13 @@ function Dispatcher() {
                   value={protocolForm.time}
                   onChange={(e) => handleProtocolChange('time', e.target.value)}
                 />
-                <button type="button" className="btn btn-primary" onClick={handleAddProtocolRow}>
-                  Добавить
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleAddProtocolRow}
+                  disabled={protocolLoading || protocolSubmitting}
+                >
+                  {protocolSubmitting ? 'Добавление…' : 'Добавить'}
                 </button>
               </div>
               <div className="protocol-table-wrapper">
@@ -413,7 +472,13 @@ function Dispatcher() {
                     </tr>
                   </thead>
                   <tbody>
-                    {protocolRows.length === 0 ? (
+                    {protocolLoading && protocolRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="empty-state">
+                          Загрузка…
+                        </td>
+                      </tr>
+                    ) : protocolRows.length === 0 ? (
                       <tr>
                         <td colSpan={3} className="empty-state">
                           Записей пока нет
@@ -422,9 +487,16 @@ function Dispatcher() {
                     ) : (
                       protocolRows.map((row) => (
                         <tr key={row.id}>
-                          <td>{row.callsign}</td>
+                          <td>{row.call_sign}</td>
                           <td>{row.action}</td>
-                          <td>{row.time}</td>
+                          <td>
+                            {row.date
+                              ? new Date(row.date).toLocaleTimeString('ru-RU', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
+                          </td>
                         </tr>
                       ))
                     )}
