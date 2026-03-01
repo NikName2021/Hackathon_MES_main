@@ -37,7 +37,9 @@ function Headquarters() {
     const ids = items.map((i) => Number(i.id)).filter((n) => !Number.isNaN(n))
     nextPlacedIdRef.current = ids.length ? Math.max(...ids, 0) + 1 : 1
     if (remoteState.canvasBackground !== undefined) setCanvasBackgroundUrl(remoteState.canvasBackground ?? null)
-    if (Array.isArray(remoteState.canvasObjects)) setCanvasObjects(remoteState.canvasObjects)
+    if (remoteState.canvasObjectsProvided && Array.isArray(remoteState.canvasObjects)) {
+      setCanvasObjects(remoteState.canvasObjects)
+    }
   }, [remoteState])
 
   const pushScene = useCallback((placedItemsNext, zoomNext) => {

@@ -113,7 +113,7 @@ class RoomParams(DeclBase):
     id = Column(String, primary_key=True, default=lambda: uuid.uuid4().hex)
     room_id = Column(String, ForeignKey("rooms.id"), unique=True, nullable=False)
 
-    time = Column(String, nullable=False)
+    time = Column(DateTime, nullable=False)
     wind = Column(Float, nullable=False)
     temperature = Column(Float, nullable=False)
     serviceability_water = Column(Boolean, nullable=False)
