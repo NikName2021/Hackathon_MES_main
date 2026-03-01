@@ -13,6 +13,8 @@ export interface SchemeCanvasProps {
   roomId?: string | null;
   /** показывать слой распространения огня (по умолчанию true; у диспетчера false) */
   showFireSpread?: boolean;
+  /** показывать объекты огня, нарисованные на холсте (по умолчанию true) */
+  showFireObjects?: boolean;
 }
 
 declare const SchemeCanvas: FC<SchemeCanvasProps>;

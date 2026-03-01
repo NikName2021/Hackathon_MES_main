@@ -31,27 +31,30 @@ export default function FireSpreadLayer({ roomId, zoom = 1 }) {
   const intervalRef = useRef(null)
 
   useEffect(() => {
-    if (!roomId) return
+    if (!roomId || startedAt) return
 
     let cancelled = false
 
-    async function init() {
+    async function pollTimer() {
       try {
         const timer = await getRoomTimer(roomId)
         const at = timer?.timer_started_at
-        if (!at && at !== null) return
         if (cancelled) return
-        setStartedAt(at)
+        if (typeof at === 'string' && at) {
+          setStartedAt(at)
+        }
       } catch (e) {
         if (!cancelled) setError(String(e))
       }
     }
 
-    init()
+    pollTimer()
+    const id = setInterval(pollTimer, 5000)
     return () => {
       cancelled = true
+      clearInterval(id)
     }
-  }, [roomId])
+  }, [roomId, startedAt])
 
   useEffect(() => {
     if (!roomId || !startedAt || startedAt === undefined) return

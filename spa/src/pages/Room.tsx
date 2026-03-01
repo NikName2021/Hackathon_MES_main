@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
 } from "@/store/canvas";
 import { useRoomId, useRoomInvites } from "@/store/room";
 import { setGameSummary } from "@/store/gameSummary";
-import { getSimulationState, postEndGame } from "@/api";
+import { getRoomObjects, getSimulationState, postEndGame } from "@/api";
 
 const ROLE_LABELS: Record<string, string> = {
   dispatcher: "Диспетчер",
@@ -37,6 +37,7 @@ export const RoomPage = () => {
   const [endGameLoading, setEndGameLoading] = useState(false);
   const [placedItems, setPlacedItems] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
+  const fetchedObjectsRef = useRef<string | null>(null);
 
   const buildIssues = (
     canvasObjects: any[],
@@ -99,9 +100,20 @@ export const RoomPage = () => {
     const canvasObjects = (remoteState as { canvasObjects?: unknown })
       .canvasObjects;
     if (canvasObjectsProvided && Array.isArray(canvasObjects)) {
-      setCanvasObjects(canvasObjects as any);
+      const current = getCanvasState();
+      const hasLocalObjects = Array.isArray(current.objects) && current.objects.length > 0;
+      if (canvasObjects.length > 0 || !hasLocalObjects) {
+        setCanvasObjects(canvasObjects as any);
+      }
     }
   }, [remoteState]);
+
+  useEffect(() => {
+    if (!wsRoomId) return;
+    if (fetchedObjectsRef.current === wsRoomId) return;
+    fetchedObjectsRef.current = wsRoomId;
+    getRoomObjects(wsRoomId).catch(() => {});
+  }, [wsRoomId]);
 
   const handleEndGame = async () => {
     if (!wsRoomId || endGameLoading) return;
@@ -182,6 +194,7 @@ export const RoomPage = () => {
               onRotationChange={() => {}}
               readOnly
               zoom={zoom}
+              roomId={wsRoomId}
             />
           </div>
           {invites.length === 0 ? (

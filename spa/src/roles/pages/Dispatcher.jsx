@@ -361,7 +361,14 @@ function Dispatcher() {
                 <span className="scheme-zoom-value">{Math.round(zoom * 100)}%</span>
                 <button type="button" onClick={handleZoomUp}>+</button>
               </div>
-              <SchemeCanvas placedItems={[]} readOnly zoom={zoom} roomId={roomId} />
+              <SchemeCanvas
+                placedItems={[]}
+                readOnly
+                zoom={zoom}
+                roomId={roomId}
+                showFireSpread={false}
+                showFireObjects={false}
+              />
             </div>
 
             <section className="panel panel-dispatch">

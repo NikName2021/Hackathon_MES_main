@@ -21,6 +21,8 @@ function SchemeCanvas({
   readOnly,
   zoom = 1,
   roomId = null,
+  showFireObjects = true,
+  showFireSpread = true,
 }) {
   const [dragOver, setDragOver] = useState(false)
   const scrollRef = useRef(null)
@@ -80,6 +82,7 @@ function SchemeCanvas({
       )
     }
     if (obj.type === 'fire') {
+      if (!showFireObjects) return null
       return (
         <circle
           key={obj.id}
@@ -261,7 +264,7 @@ function SchemeCanvas({
             {canvasObjects.map(renderCanvasObject)}
           </svg>
         )}
-        {roomId && <FireSpreadLayer roomId={roomId} zoom={zoom} />}
+        {roomId && showFireSpread && <FireSpreadLayer roomId={roomId} zoom={zoom} />}
         {placedItems.map((item) => (
           <div
             key={item.id}
