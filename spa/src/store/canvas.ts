@@ -61,3 +61,9 @@ export const removeCanvasObject = (id: string) =>
 export const setCanvasSelectedId = (id: string | null) =>
   useCanvasStore.getState().setSelectedId(id);
 export const clearCanvas = () => useCanvasStore.getState().clearCanvas();
+
+/** Текущее состояние холста (для синхронизации сцены по сокету). */
+export const getCanvasState = () => {
+  const s = useCanvasStore.getState();
+  return { backgroundUrl: s.backgroundUrl, objects: s.objects };
+};
