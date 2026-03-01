@@ -41,6 +41,8 @@ export function RadioWidget({
   const roomRef = useRef<Room | null>(null);
   const micTrackRef = useRef<LocalAudioTrack | null>(null);
   const identityRef = useRef<string | null>(null);
+  /** Когда канал занят, показываем пользователю «в эфире», но микрофон не публикуем (обманка). */
+  const fakePttRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingContextRef = useRef<AudioContext | null>(null);
@@ -121,6 +123,7 @@ export function RadioWidget({
       });
 
       room.on(RoomEvent.Disconnected, () => {
+        fakePttRef.current = false;
         setConnectionState("disconnected");
         setParticipants([]);
         setIsHoldingPtt(false);
@@ -193,6 +196,7 @@ export function RadioWidget({
       roomRef.current = null;
     }
     identityRef.current = null;
+    fakePttRef.current = false;
     setIsHoldingPtt(false);
     setCurrentHolder(null);
     setParticipants([]);
@@ -210,6 +214,7 @@ export function RadioWidget({
       if (!res.ok) return;
       const data = await res.json();
       if (data.granted) {
+        fakePttRef.current = false;
         setIsHoldingPtt(true);
         setCurrentHolder(identityRef.current);
         const track = await initMicTrack();
@@ -221,7 +226,9 @@ export function RadioWidget({
           track.unmute();
         }
       } else {
-        setIsHoldingPtt(false);
+        // Канал занят: показываем пользователю «в эфире» (анимация, кнопка), но микрофон не публикуем
+        fakePttRef.current = true;
+        setIsHoldingPtt(true);
         setCurrentHolder(data.holder || null);
       }
     } catch (e) {
@@ -230,6 +237,11 @@ export function RadioWidget({
   }, [initMicTrack]);
 
   const releasePtt = useCallback(async () => {
+    if (fakePttRef.current) {
+      fakePttRef.current = false;
+      setIsHoldingPtt(false);
+      return;
+    }
     if (!identityRef.current || !tokenServerUrl) return;
     try {
       await fetch(`${tokenServerUrl}/ptt/release`, {
