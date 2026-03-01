@@ -12,7 +12,7 @@ import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from "@/stor
 import { useRoomId, useRoomInvites } from "@/store/room";
 import { setGameSummary } from "@/store/gameSummary";
 import { PATHS } from "@/config/paths";
-import { postEndGame } from "@/api";
+import { getSimulationState, postEndGame } from "@/api";
 
 const ROLE_LABELS: Record<string, string> = {
   dispatcher: "Диспетчер",
@@ -104,20 +104,30 @@ export const RoomPage = () => {
   const handleEndGame = async () => {
     if (!wsRoomId || endGameLoading) return;
     setEndGameLoading(true);
-    const canvas = getCanvasState();
-    setGameSummary({
-      roomId: wsRoomId,
-      endedAt: new Date().toISOString(),
-      invites,
-      placedItems,
-      zoom,
-      canvasBackground: canvas.backgroundUrl,
-      canvasObjects: canvas.objects,
-      issues: buildIssues(canvas.objects, placedItems, canvas.backgroundUrl),
-    });
-    navigate(PATHS.RESULT);
-    postEndGame(wsRoomId).catch(() => {});
-    setEndGameLoading(false);
+    try {
+      const canvas = getCanvasState();
+      let dispatches: any[] = [];
+      try {
+        const sim = await getSimulationState(wsRoomId);
+        dispatches = sim.dispatcher_dispatches ?? [];
+      } catch {
+        dispatches = [];
+      }
+      setGameSummary({
+        roomId: wsRoomId,
+        endedAt: new Date().toISOString(),
+        invites,
+        placedItems,
+        zoom,
+        canvasBackground: canvas.backgroundUrl,
+        canvasObjects: canvas.objects,
+        issues: buildIssues(canvas.objects, placedItems, canvas.backgroundUrl),
+        dispatches,
+      });
+      await postEndGame(wsRoomId).catch(() => {});
+    } finally {
+      setEndGameLoading(false);
+    }
   };
 
   return (

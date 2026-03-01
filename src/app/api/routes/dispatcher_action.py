@@ -52,11 +52,4 @@ async def get_actions_by_room(
 
     result = await db.execute(query)
     actions = result.scalars().all()
-
-    if not actions:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Записи для комнаты '{room_id}' не найдены",
-        )
-
     return actions

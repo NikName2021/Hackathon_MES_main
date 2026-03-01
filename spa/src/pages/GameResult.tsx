@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,8 @@ import SchemeCanvas from "@/roles/components/equipment/SchemeCanvas";
 import { PATHS } from "@/config/paths";
 import { useGameSummary } from "@/store/gameSummary";
 import { setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
+import { getDispatcherActionsByRoom } from "@/api";
+import type { DispatcherActionItem } from "@/api";
 
 const ROLE_LABELS: Record<string, string> = {
   dispatcher: "Диспетчер",
@@ -18,12 +20,20 @@ const ROLE_LABELS: Record<string, string> = {
 export const GameResultPage = () => {
   const summary = useGameSummary();
   const navigate = useNavigate();
+  const [dispatcherActions, setDispatcherActions] = useState<DispatcherActionItem[]>([]);
 
   useEffect(() => {
     if (!summary) return;
     setCanvasBackgroundUrl(summary.canvasBackground ?? null);
     setCanvasObjects(summary.canvasObjects ?? []);
   }, [summary]);
+
+  useEffect(() => {
+    if (!summary?.roomId) return;
+    getDispatcherActionsByRoom(summary.roomId)
+      .then(setDispatcherActions)
+      .catch(() => setDispatcherActions([]));
+  }, [summary?.roomId]);
 
   const endedAt = useMemo(() => {
     if (!summary?.endedAt) return "Не указано";
@@ -136,6 +146,37 @@ export const GameResultPage = () => {
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
+                Высылка техники
+              </p>
+              <p className="mt-1 text-xs text-white/60">Машины, отправленные диспетчером</p>
+              {summary.dispatches.length === 0 ? (
+                <p className="mt-2 text-xs text-white/50">Нет записей</p>
+              ) : (
+                <div className="mt-2 overflow-x-auto">
+                  <table className="min-w-full text-xs text-white/80">
+                    <thead>
+                      <tr className="text-white/50">
+                        <th className="pb-1 pr-2 font-medium">Машина</th>
+                        <th className="pb-1 pr-2 font-medium">Кол.</th>
+                        <th className="pb-1 font-medium">мин</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.dispatches.map((d, i) => (
+                        <tr key={`${d.vehicleId}-${d.sentAt}-${i}`} className="border-t border-white/5">
+                          <td className="py-1 pr-2">{d.vehicleName}</td>
+                          <td className="py-1 pr-2">{d.count}</td>
+                          <td className="py-1">{d.etaMinutes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
                 Ошибки и замечания
               </p>
               {summary.issues.length === 0 ? (
@@ -155,41 +196,43 @@ export const GameResultPage = () => {
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/30 backdrop-blur">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
-            Участники и вклад
+            Журнал диспетчера
           </p>
           <p className="mt-2 text-sm text-white/70">
-            Статусы и оценка вклада участников. Данные будут расширены после подключения серверной аналитики.
+            Протокол действий диспетчера — все записи по комнате.
           </p>
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-left text-sm text-white/80">
-              <thead>
-                <tr className="text-white/60">
-                  <th className="pb-3 pr-4 font-medium">Роль</th>
-                  <th className="pb-3 pr-4 font-medium">Статус</th>
-                  <th className="pb-3 pr-4 font-medium">Вклад</th>
-                  <th className="pb-3 font-medium">Ошибки</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.invites.map((invite) => (
-                  <tr key={`${invite.role}-${invite.invite_token}`} className="border-t border-white/10">
-                    <td className="py-3 pr-4">
-                      {ROLE_LABELS[invite.role] ?? invite.role}
-                    </td>
-                    <td className="py-3 pr-4">Нет данных</td>
-                    <td className="py-3 pr-4">Нет данных</td>
-                    <td className="py-3">Нет данных</td>
+            {dispatcherActions.length === 0 ? (
+              <p className="py-3 text-sm text-white/60">
+                Записей пока нет.
+              </p>
+            ) : (
+              <table className="min-w-full text-left text-sm text-white/80">
+                <thead>
+                  <tr className="text-white/60">
+                    <th className="pb-3 pr-4 font-medium">Позывной</th>
+                    <th className="pb-3 pr-4 font-medium">Действие</th>
+                    <th className="pb-3 font-medium">Время</th>
                   </tr>
-                ))}
-                {summary.invites.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="py-4 text-white/60">
-                      Данных по участникам нет.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {dispatcherActions.map((a) => (
+                    <tr key={a.id} className="border-t border-white/10">
+                      <td className="py-3 pr-4">{a.call_sign}</td>
+                      <td className="py-3 pr-4">{a.action}</td>
+                      <td className="py-3">
+                        {a.date
+                          ? new Date(a.date).toLocaleTimeString("ru-RU", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
       </div>

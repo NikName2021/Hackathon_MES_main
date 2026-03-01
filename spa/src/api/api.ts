@@ -302,6 +302,7 @@ export interface SimulationStateResponse {
   dispatcher_dispatches: DispatcherDispatchItem[];
   headquarters_created?: boolean;
   combat_sections_added?: number;
+  game_ended?: boolean;
 }
 
 export async function getSimulationState(
@@ -345,4 +346,45 @@ export async function postDispatcherDispatch(
     payload
   );
   return data;
+}
+
+/** Протокол действий диспетчера — записи по комнате */
+export interface DispatcherActionItem {
+  id: number;
+  room_id: string;
+  user_id: number;
+  call_sign: string;
+  action: string;
+  date: string;
+  updated_at?: string;
+}
+
+export async function createDispatcherAction(payload: {
+  room_id: string;
+  user_id: number;
+  call_sign: string;
+  action: string;
+  date: string;
+}): Promise<DispatcherActionItem> {
+  const { data } = await apiAuth.post<DispatcherActionItem>(
+    "dispatcher-actions/",
+    payload
+  );
+  return data;
+}
+
+export async function getDispatcherActionsByRoom(
+  room_id: string
+): Promise<DispatcherActionItem[]> {
+  try {
+    const { data } = await api.get<DispatcherActionItem[]>(
+      `dispatcher-actions/room/${room_id}`
+    );
+    return data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 404) {
+      return [];
+    }
+    throw err;
+  }
 }
