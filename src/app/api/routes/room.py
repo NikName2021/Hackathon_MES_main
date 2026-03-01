@@ -2,7 +2,7 @@ import datetime
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends
 from fastapi import HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -116,6 +116,72 @@ async def get_room_timer(
     state_row = state_result.scalar_one_or_none()
     payload = state_row.payload if state_row and state_row.payload else {}
     return {"room_id": room_id, "timer_started_at": payload.get("timer_started_at")}
+
+
+@router.get("/{room_id}/simulation-state")
+async def get_simulation_state(
+        room_id: str,
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Состояние симуляции для игровой механики: таймер и высылка техники диспетчером.
+    Без авторизации — доступно всем ролям.
+    """
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    payload = dict(state_row.payload) if state_row and state_row.payload else {}
+    dispatches = payload.get("dispatcher_dispatches")
+    if not isinstance(dispatches, list):
+        dispatches = []
+    return {
+        "room_id": room_id,
+        "timer_started_at": payload.get("timer_started_at"),
+        "dispatcher_dispatches": dispatches,
+    }
+
+
+@router.post("/{room_id}/dispatcher-dispatch")
+async def post_dispatcher_dispatch(
+        room_id: str,
+        body: dict = Body(...),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Диспетчер отправил технику: добавляем запись в высылку (Время след., мин. и момент отправки).
+    """
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    vehicle_id = body.get("vehicleId") or body.get("vehicle_id")
+    vehicle_name = body.get("vehicleName") or body.get("vehicle_name") or ""
+    count = int(body.get("count", 0))
+    eta_minutes = int(body.get("etaMinutes") or body.get("eta_minutes") or 0)
+    if count < 1 or eta_minutes < 1:
+        raise HTTPException(status_code=400, detail="count и etaMinutes должны быть больше 0")
+    sent_at = datetime.datetime.utcnow().isoformat(timespec="milliseconds") + "Z"
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    payload = dict(state_row.payload) if state_row and state_row.payload else {}
+    dispatches = list(payload.get("dispatcher_dispatches") or [])
+    dispatches.append({
+        "vehicleId": vehicle_id,
+        "vehicleName": vehicle_name,
+        "count": count,
+        "etaMinutes": eta_minutes,
+        "sentAt": sent_at,
+    })
+    payload["dispatcher_dispatches"] = dispatches
+    if state_row:
+        state_row.payload = payload
+    else:
+        db.add(RoomState(room_id=room_id, payload=payload))
+    await db.commit()
+    return {"ok": True, "sent_at": sent_at}
 
 
 @router.get("/{room_id}/state")

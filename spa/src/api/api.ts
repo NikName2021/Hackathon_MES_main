@@ -260,3 +260,43 @@ export async function getRoomTimer(room_id: string): Promise<RoomTimerResponse> 
   return data;
 }
 
+/** Состояние симуляции: таймер и высылка техники диспетчером */
+export interface DispatcherDispatchItem {
+  vehicleId: string;
+  vehicleName: string;
+  count: number;
+  etaMinutes: number;
+  sentAt: string;
+}
+
+export interface SimulationStateResponse {
+  room_id: string;
+  timer_started_at: string | null;
+  dispatcher_dispatches: DispatcherDispatchItem[];
+}
+
+export async function getSimulationState(
+  room_id: string
+): Promise<SimulationStateResponse> {
+  const { data } = await api.get<SimulationStateResponse>(
+    `room/${room_id}/simulation-state`
+  );
+  return data;
+}
+
+export async function postDispatcherDispatch(
+  room_id: string,
+  payload: {
+    vehicleId: string;
+    vehicleName: string;
+    count: number;
+    etaMinutes: number;
+  }
+): Promise<{ ok: boolean; sent_at: string }> {
+  const { data } = await api.post<{ ok: boolean; sent_at: string }>(
+    `room/${room_id}/dispatcher-dispatch`,
+    payload
+  );
+  return data;
+}
+
