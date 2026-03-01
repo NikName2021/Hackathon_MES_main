@@ -23,3 +23,4 @@ spa/package-lock.json
 /server/
 /src/app/uploads/
 docker-compose.override.yml
+.DS_Store

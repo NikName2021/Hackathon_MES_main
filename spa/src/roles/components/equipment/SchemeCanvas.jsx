@@ -6,7 +6,11 @@ import './SchemeCanvas.css'
 /**
  * Область схемы, куда перетаскиваются элементы.
  * Отображает размещённые элементы с возможностью перетаскивания.
- * Если передан roomId, поверх схемы рисуется слой распространения огня (синхронизирован между ролями).
+ * Если передан roomId и showFireSpread !== false, поверх схемы рисуется слой распространения огня.
+ * Диспетчеру слой огня не показывается (showFireSpread=false).
+ * @param {object} props
+ * @param {string | null} [props.roomId=null] — id комнаты для слоя огня
+ * @param {boolean} [props.showFireSpread=true] — показывать ли слой распространения огня
  */
 const BASE_WIDTH = 960
 const BASE_HEIGHT = 540
@@ -21,9 +25,13 @@ function SchemeCanvas({
   readOnly,
   zoom = 1,
   roomId = null,
+  showFireSpread = true,
 }) {
   const [dragOver, setDragOver] = useState(false)
   const scrollRef = useRef(null)
+  const draggingIdRef = useRef(null)
+  const canvasContainerRef = useRef(null)
+  const moveStateRef = useRef(null)
   const canvasObjects = useCanvasObjects()
   const canvasBackground = useCanvasBackgroundUrl()
   const hasCanvasObjects = canvasObjects && canvasObjects.length > 0
@@ -122,7 +130,21 @@ function SchemeCanvas({
     setDragOver(false)
     if (readOnly) return
 
-    const dataStr = e.dataTransfer.getData('application/json')
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX
+    const clientY = e.clientY ?? e.changedTouches?.[0]?.clientY ?? e.touches?.[0]?.clientY
+    const dropTarget = e.currentTarget
+    const inner = dropTarget?.querySelector?.('.scheme-canvas-inner') || dropTarget
+    const rect = inner.getBoundingClientRect()
+    const coords = { x: clientX - rect.left, y: clientY - rect.top }
+
+    const moveId = draggingIdRef.current
+    if (moveId != null) {
+      draggingIdRef.current = null
+      onMove?.(moveId, coords.x, coords.y)
+      return
+    }
+
+    const dataStr = e.dataTransfer?.getData?.('application/json') || e.dataTransfer?.getData?.('text/plain')
     if (!dataStr) return
 
     try {
@@ -146,8 +168,78 @@ function SchemeCanvas({
       e.preventDefault()
       return
     }
-    e.dataTransfer.setData('application/json', JSON.stringify({ source: 'canvas', id }))
-    e.dataTransfer.effectAllowed = 'move'
+    draggingIdRef.current = id
+    try {
+      e.dataTransfer?.setData?.('application/json', JSON.stringify({ source: 'canvas', id }))
+      e.dataTransfer?.setData?.('text/plain', JSON.stringify({ source: 'canvas', id }))
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+    } catch (_) {}
+  }
+
+  const startPointerMove = (item, clientX, clientY) => {
+    if (readOnly || !onMove) return
+    if (moveStateRef.current) return
+    moveStateRef.current = {
+      id: item.id,
+      startX: item.x,
+      startY: item.y,
+      startClientX: clientX,
+      startClientY: clientY,
+    }
+  }
+
+  const onPointerMove = (clientX, clientY) => {
+    const s = moveStateRef.current
+    if (!s || !onMove) return
+    const zoomVal = Number(zoom) || 1
+    const newX = s.startX + (clientX - s.startClientX) / zoomVal
+    const newY = s.startY + (clientY - s.startClientY) / zoomVal
+    onMove(s.id, Math.max(0, newX), Math.max(0, newY))
+  }
+
+  const endPointerMove = () => {
+    moveStateRef.current = null
+  }
+
+  const handleItemMouseDown = (e, item) => {
+    if (readOnly) return
+    if (e.target.closest('.scheme-item-btn')) return
+    if (e.button !== 0) return
+    e.preventDefault()
+    startPointerMove(item, e.clientX, e.clientY)
+    const onMouseMove = (ev) => onPointerMove(ev.clientX, ev.clientY)
+    const onMouseUp = () => {
+      endPointerMove()
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+  }
+
+  const handleItemPointerDown = (e, item) => {
+    if (readOnly) return
+    if (e.target.closest('.scheme-item-btn')) return
+    const isTouch = e.type.startsWith('touch')
+    const clientX = isTouch ? e.touches[0]?.clientX : e.clientX
+    const clientY = isTouch ? e.touches[0]?.clientY : e.clientY
+    if (clientX == null || clientY == null) return
+    if (isTouch) e.preventDefault()
+    startPointerMove(item, clientX, clientY)
+    if (isTouch) {
+      const onTouchMove = (ev) => {
+        ev.preventDefault()
+        if (ev.touches[0]) onPointerMove(ev.touches[0].clientX, ev.touches[0].clientY)
+      }
+      const onTouchEnd = (ev) => {
+        if (ev.changedTouches?.[0]) onPointerMove(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY)
+        endPointerMove()
+        window.removeEventListener('touchmove', onTouchMove)
+        window.removeEventListener('touchend', onTouchEnd)
+      }
+      window.addEventListener('touchmove', onTouchMove, { passive: false })
+      window.addEventListener('touchend', onTouchEnd, { once: true })
+    }
   }
 
   const handleResizeMouseDown = (e, item) => {
@@ -232,8 +324,12 @@ function SchemeCanvas({
       onDrop={handleDrop}
     >
       <div
-        className="scheme-canvas-viewport"
-        style={{ width: `${BASE_WIDTH * zoom}px`, height: `${BASE_HEIGHT * zoom}px` }}
+
+//         className="scheme-canvas-viewport"
+//         style={{ width: `${BASE_WIDTH * zoom}px`, height: `${BASE_HEIGHT * zoom}px` }}
+        ref={canvasContainerRef}
+        className="scheme-canvas-inner"
+        style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
       >
         <div
           className="scheme-canvas-inner"
@@ -261,7 +357,7 @@ function SchemeCanvas({
             {canvasObjects.map(renderCanvasObject)}
           </svg>
         )}
-        {roomId && <FireSpreadLayer roomId={roomId} zoom={zoom} />}
+        {roomId && showFireSpread && <FireSpreadLayer roomId={roomId} zoom={zoom} />}
         {placedItems.map((item) => (
           <div
             key={item.id}
@@ -273,6 +369,9 @@ function SchemeCanvas({
             }}
             draggable={!readOnly}
             onDragStart={(ev) => handleItemDragStart(ev, item.id)}
+            onDragEnd={() => { draggingIdRef.current = null }}
+            onMouseDown={(e) => handleItemMouseDown(e, item)}
+            onTouchStart={(e) => handleItemPointerDown(e, item)}
           >
             <div className="scheme-item-visual">
               <img

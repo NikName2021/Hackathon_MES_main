@@ -29,7 +29,7 @@ function getGameSocketUrl(roomId) {
  * - При изменении сцены вызываем sendSceneUpdate(state); сервер сохраняет в БД и рассылает остальным.
  *
  * @param {string | null} roomId — id комнаты (например usePlayerData()?.room_id)
- * @returns {{ sendSceneUpdate: (state: SceneState) => void, remoteState: SceneState | null, isConnected: boolean }}
+ * @returns {{ sendSceneUpdate: (state: SceneState) => void, remoteState: SceneState | null, isConnected: boolean, gameEnded: boolean }}
  */
 export function useRoomGameSocket(roomId) {
   const [remoteState, setRemoteState] = useState(null)

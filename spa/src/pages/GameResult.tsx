@@ -9,13 +9,6 @@ import { setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
 import { getDispatcherActionsByRoom } from "@/api";
 import type { DispatcherActionItem } from "@/api";
 
-const ROLE_LABELS: Record<string, string> = {
-  dispatcher: "Диспетчер",
-  rtp: "Руководитель тушения пожара",
-  headquarters: "Штаб",
-  by1: "Боевой участок 1",
-  by2: "Боевой участок 2",
-};
 
 export const GameResultPage = () => {
   const summary = useGameSummary();

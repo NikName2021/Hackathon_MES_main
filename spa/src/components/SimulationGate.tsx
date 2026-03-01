@@ -165,10 +165,10 @@ export function SimulationGate({ roomId, role, children }: SimulationGateProps) 
     return (
       <div className="relative z-10 flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-900/60 p-8 text-center backdrop-blur">
         <p className="text-xl font-medium text-white">
-          Ожидаем добавления в группу от Штаба
+          Ожидаем добавления в группу от РТП или Штаба
         </p>
         <p className="mt-2 text-sm text-white/70">
-          Действия заблокированы до добавления Штабом первого боевого участка.
+          Действия заблокированы до добавления первого боевого участка (РТП или Штаб).
         </p>
       </div>
     );
@@ -178,10 +178,10 @@ export function SimulationGate({ roomId, role, children }: SimulationGateProps) 
     return (
       <div className="relative z-10 flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-900/60 p-8 text-center backdrop-blur">
         <p className="text-xl font-medium text-white">
-          Ожидаем добавления в группу от Штаба
+          Ожидаем добавления в группу от РТП или Штаба
         </p>
         <p className="mt-2 text-sm text-white/70">
-          Действия заблокированы до добавления Штабом второго боевого участка.
+          Действия заблокированы до добавления второго боевого участка (РТП или Штаб).
         </p>
       </div>
     );
