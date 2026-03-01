@@ -263,6 +263,7 @@ async def create_room_params(
     params = RoomParams(
         room_id=data.room_id,
         time=time_dt,
+        address=data.address if data.address is not None else None,
         wind=data.wind,
         temperature=data.temperature,
         serviceability_water=data.serviceability_water,
@@ -294,6 +295,7 @@ async def get_room_params(
         id=params.id,
         room_id=params.room_id,
         time=_format_time_from_datetime(params.time),
+        address=getattr(params, "address", None),
         wind=params.wind,
         temperature=params.temperature,
         serviceability_water=params.serviceability_water,
@@ -333,6 +335,7 @@ async def update_room_params(
         id=params.id,
         room_id=params.room_id,
         time=_format_time_from_datetime(params.time),
+        address=getattr(params, "address", None),
         wind=params.wind,
         temperature=params.temperature,
         serviceability_water=params.serviceability_water,

@@ -125,6 +125,7 @@ export async function registerParams(
   wind: number,
   temperature: number,
   time: string,
+  address?: string,
 ) {
   try {
     await apiAuth.post("room_params/room-params", {
@@ -133,6 +134,7 @@ export async function registerParams(
       wind,
       temperature,
       time,
+      address: address ?? "",
     });
   } catch (error) {
     if (axios.isAxiosError(error)) {

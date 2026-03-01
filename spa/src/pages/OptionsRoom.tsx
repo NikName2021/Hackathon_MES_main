@@ -5,10 +5,12 @@ import { PATHS } from "@/config/paths";
 import { RoomCanvasEditor } from "@/components/RoomCanvasEditor";
 import { clearCanvas, useCanvasObjects } from "@/store/canvas";
 import {
+  setOptionAddress,
   setOptionHasWaterNearby,
   setOptionTemperature,
   setOptionTime,
   setOptionWind,
+  useOptionAddress,
   useOptionHasWaterNearby,
   useOptionTemperature,
   useOptionTime,
@@ -24,6 +26,7 @@ export const OptionsRoomPage = () => {
   const wind = useOptionWind();
   const temperature = useOptionTemperature();
   const time = useOptionTime();
+  const address = useOptionAddress();
   const hasWaterNearby = useOptionHasWaterNearby();
   const objects = useCanvasObjects();
   const roomId = useRoomId();
@@ -59,6 +62,7 @@ export const OptionsRoomPage = () => {
         Number(wind),
         Number(temperature),
         time,
+        address,
       );
       clearCanvas()
       setStep("image");
@@ -164,6 +168,16 @@ export const OptionsRoomPage = () => {
                     type="time"
                     value={time}
                     onChange={(event) => setOptionTime(event.target.value)}
+                    className={fieldClassName}
+                  />
+                </div>
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="text-xs text-white/70">Адрес</label>
+                  <Input
+                    type="text"
+                    value={address}
+                    onChange={(event) => setOptionAddress(event.target.value)}
+                    placeholder="Например: Россия, Сириус, Олимпийский проспект, 15"
                     className={fieldClassName}
                   />
                 </div>
