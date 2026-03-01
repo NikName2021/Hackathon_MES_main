@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,10 @@ import { RadioWidget } from "@/components/RadioWidget";
 import { RoomTimer } from "@/components/RoomTimer";
 import SchemeCanvas from "@/roles/components/equipment/SchemeCanvas";
 import { useRoomGameSocket } from "@/hooks/useRoomGameSocket";
-import { setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
+import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
 import { useRoomId, useRoomInvites } from "@/store/room";
+import { setGameSummary } from "@/store/gameSummary";
+import { PATHS } from "@/config/paths";
 
 const ROLE_LABELS: Record<string, string> = {
   dispatcher: "Диспетчер",
@@ -19,6 +21,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export const RoomPage = () => {
+  const navigate = useNavigate();
   const { roomId: paramRoomId } = useParams();
   const storedRoomId = useRoomId();
   const invites = useRoomInvites();
@@ -29,6 +32,38 @@ export const RoomPage = () => {
   const { remoteState } = useRoomGameSocket(wsRoomId);
   const [placedItems, setPlacedItems] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
+
+  const buildIssues = (
+    canvasObjects: any[],
+    items: any[],
+    backgroundUrl: string | null
+  ) => {
+    const issues: string[] = [];
+    if (!backgroundUrl) {
+      issues.push("Не загружен фон схемы.");
+    }
+    if (!canvasObjects?.length) {
+      issues.push("На схеме отсутствуют объекты обстановки.");
+    }
+    const hasFire = Array.isArray(canvasObjects)
+      ? canvasObjects.some((obj) => obj?.type === "fire")
+      : false;
+    if (!hasFire) {
+      issues.push("Не обозначен очаг пожара.");
+    }
+    const hasZones = Array.isArray(canvasObjects)
+      ? canvasObjects.some((obj) =>
+          ["line", "rect", "circle"].includes(String(obj?.type))
+        )
+      : false;
+    if (!hasZones) {
+      issues.push("Не нанесены линии или зоны обстановки.");
+    }
+    if (!items?.length) {
+      issues.push("Не размещены силы и средства на схеме.");
+    }
+    return issues;
+  };
 
   async function copy(text: string, key: string) {
     try {
@@ -82,7 +117,20 @@ export const RoomPage = () => {
               <Button
                 size="lg"
                 className="h-11 min-w-[200px] bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
-                onClick={() => {}}
+                onClick={() => {
+                  const canvas = getCanvasState();
+                  setGameSummary({
+                    roomId: wsRoomId,
+                    endedAt: new Date().toISOString(),
+                    invites,
+                    placedItems,
+                    zoom,
+                    canvasBackground: canvas.backgroundUrl,
+                    canvasObjects: canvas.objects,
+                    issues: buildIssues(canvas.objects, placedItems, canvas.backgroundUrl),
+                  });
+                  navigate(PATHS.RESULT);
+                }}
               >
                 Закончить игру
               </Button>
@@ -101,18 +149,6 @@ export const RoomPage = () => {
         </section>
 
         <section className="grid gap-4">
-          <div className="mt-4">
-            <SchemeCanvas
-              placedItems={placedItems}
-              onPlace={() => {}}
-              onMove={() => {}}
-              onRemove={() => {}}
-              onScaleChange={() => {}}
-              onRotationChange={() => {}}
-              readOnly
-              zoom={zoom}
-            />
-          </div>
           {invites.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
               Нет данных по приглашениям.
@@ -177,6 +213,18 @@ export const RoomPage = () => {
                 Наблюдение за тем, как участники размещают силы и средства на
                 схеме.
               </p>
+              <div className="mt-4">
+                <SchemeCanvas
+                  placedItems={placedItems}
+                  onPlace={() => {}}
+                  onMove={() => {}}
+                  onRemove={() => {}}
+                  onScaleChange={() => {}}
+                  onRotationChange={() => {}}
+                  readOnly
+                  zoom={zoom}
+                />
+              </div>
             </section>
             <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
@@ -195,3 +243,4 @@ export const RoomPage = () => {
     </main>
   );
 };
+

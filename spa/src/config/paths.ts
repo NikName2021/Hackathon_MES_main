@@ -7,6 +7,7 @@ export const PATHS = {
     ROOM_ID: "/room/:roomId",
     INVITE: "/invite/:tokenId",
     OPTIONS: "/options",
+    RESULT: "/result",
     ROLE_DISPATCHER: "/dispatcher",
     ROLE_RTP: "/rtp",
     ROLE_HEADQUARTERS: "/headquarters",

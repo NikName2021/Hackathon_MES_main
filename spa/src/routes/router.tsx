@@ -8,6 +8,7 @@ import { PATHS } from "../config/paths";
 import { LoginPage } from "@/pages/Login";
 import { InvitePage } from "@/pages/Invite";
 import { OptionsRoomPage } from "@/pages/OptionsRoom";
+import { GameResultPage } from "@/pages/GameResult";
 import DispatcherRole from "@/roles/pages/Dispatcher";
 import RTPRole from "@/roles/pages/RTP";
 import HeadquartersRole from "@/roles/pages/Headquarters";
@@ -24,6 +25,7 @@ export function AppRouter() {
     { path: PATHS.INVITE, element: <InvitePage /> },
     { path: PATHS.JOIN_ID, element: <JoinPage /> },
     { path: PATHS.OPTIONS, element: <OptionsRoomPage /> },
+    { path: PATHS.RESULT, element: <GameResultPage /> },
     { path: PATHS.ROLE_DISPATCHER, element: <RolePageLayout><DispatcherRole /></RolePageLayout> },
     { path: PATHS.ROLE_RTP, element: <RolePageLayout><RTPRole /></RolePageLayout> },
     { path: PATHS.ROLE_HEADQUARTERS, element: <RolePageLayout><HeadquartersRole /></RolePageLayout> },
