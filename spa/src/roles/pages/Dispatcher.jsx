@@ -30,8 +30,9 @@ function Dispatcher() {
   const [scenario, setScenario] = useState({
     wind: '',
     temperature: '',
-    timeOfDay: '',
-    waterSupply: 'ok',
+    time: '',
+    waterNearby: '',
+    address: '',
   })
 
   const [protocolRows, setProtocolRows] = useState([])
@@ -45,24 +46,13 @@ function Dispatcher() {
   const [dispatchEta, setDispatchEta] = useState({})
   const [dispatches, setDispatches] = useState([])
 
-  const [fireAddress, setFireAddress] = useState(
-    'Россия, Сириус, Олимпийский проспект, 15'
-  )
+  const [fireAddress, setFireAddress] = useState('')
   const [dispatchAddress] = useState('Россия, Сириус, Триумфальная ул., 24')
   const [calculatedMinutes, setCalculatedMinutes] = useState(null)
   const [fireCoords, setFireCoords] = useState(null)
   const [routeLoading, setRouteLoading] = useState(false)
   const [routeError, setRouteError] = useState(null)
   const [dispatchError, setDispatchError] = useState(null)
-
-  const mapTimeToDayPart = (timeValue) => {
-    if (!timeValue) return ''
-    const hour = Number(String(timeValue).split(':')[0])
-    if (Number.isNaN(hour)) return ''
-    if (hour >= 6 && hour < 18) return 'day'
-    if (hour >= 18 && hour < 22) return 'evening'
-    return 'night'
-  }
 
   useEffect(() => {
     if (!activeRoomId) return
@@ -79,19 +69,22 @@ function Dispatcher() {
           params?.temperature !== undefined && params?.temperature !== null
             ? `${params.temperature > 0 ? '+' : ''}${params.temperature} °C`
             : ''
-        const timeOfDayValue = mapTimeToDayPart(params?.time)
-        const waterValue =
+        const timeValue = params?.time ? String(params.time) : ''
+        const waterNearbyValue =
           typeof params?.serviceability_water === 'boolean'
             ? params.serviceability_water
-              ? 'ok'
-              : 'fail'
-            : params?.serviceability_water || 'ok'
+              ? 'Да'
+              : 'Нет'
+            : params?.serviceability_water ? 'Да' : 'Нет'
+        const addressValue = params?.address ? String(params.address) : ''
         setScenario({
           wind: windValue,
           temperature: temperatureValue,
-          timeOfDay: timeOfDayValue,
-          waterSupply: waterValue,
+          time: timeValue,
+          waterNearby: waterNearbyValue,
+          address: addressValue,
         })
+        if (addressValue) setFireAddress(addressValue)
       })
       .catch(() => {})
 
@@ -245,31 +238,31 @@ function Dispatcher() {
                 />
               </label>
               <label className="form-field">
-                <span>Время суток</span>
-                <select
-                  value={scenario.timeOfDay}
-                  onChange={(e) => handleScenarioChange('timeOfDay', e.target.value)}
-                  disabled
-                >
-                  <option value="">Не выбрано</option>
-                  <option value="day">День</option>
-                  <option value="evening">Вечер</option>
-                  <option value="night">Ночь</option>
-                </select>
+                <span>Время</span>
+                <input
+                  type="text"
+                  value={scenario.time}
+                  readOnly
+                  placeholder="ЧЧ:ММ из настройки условий"
+                />
               </label>
               <label className="form-field">
-                <span>Состояние систем ПВ</span>
-                <select
-                  value={scenario.waterSupply}
-                  onChange={(e) =>
-                    handleScenarioChange('waterSupply', e.target.value)
-                  }
-                  disabled
-                >
-                  <option value="ok">Исправны</option>
-                  <option value="partial">Частично неисправны</option>
-                  <option value="fail">Неисправны</option>
-                </select>
+                <span>Рядом есть вода</span>
+                <input
+                  type="text"
+                  value={scenario.waterNearby}
+                  readOnly
+                  placeholder="Да / Нет из настройки условий"
+                />
+              </label>
+              <label className="form-field">
+                <span>Адрес</span>
+                <input
+                  type="text"
+                  value={scenario.address}
+                  readOnly
+                  placeholder="Адрес из настройки условий"
+                />
               </label>
             </div>
           </section>
@@ -307,6 +300,7 @@ function Dispatcher() {
                     value={fireAddress}
                     onChange={(e) => setFireAddress(e.target.value)}
                     placeholder="Россия, Сириус, Олимпийский проспект, 15"
+                    title="Подставляется из параметров комнаты (адрес)"
                   />
                 </label>
                 <label className="form-field dispatch-address-readonly">
