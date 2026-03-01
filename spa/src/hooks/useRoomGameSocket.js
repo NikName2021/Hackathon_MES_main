@@ -75,6 +75,31 @@ export function useRoomGameSocket(roomId) {
         if (disposed.current) return
         try {
           const msg = JSON.parse(event.data)
+          const eventName = typeof msg?.event === 'string'
+            ? msg.event
+            : (typeof msg?.type === 'string' ? msg.type : (typeof msg?.action === 'string' ? msg.action : null))
+          if (eventName && ['game_ended', 'game_end', 'end_game', 'end'].includes(eventName)) {
+            setGameEnded(true)
+            return
+          }
+          const directEnded =
+            msg?.game_ended === true ||
+            msg?.gameEnded === true ||
+            msg?.ended === true
+          if (directEnded) {
+            setGameEnded(true)
+            return
+          }
+          const nested = msg?.data ?? msg?.payload ?? null
+          const nestedEvent = typeof nested?.event === 'string' ? nested.event : null
+          if (nestedEvent && ['game_ended', 'game_end', 'end_game', 'end'].includes(nestedEvent)) {
+            setGameEnded(true)
+            return
+          }
+          if (nested?.game_ended === true || nested?.gameEnded === true || nested?.ended === true) {
+            setGameEnded(true)
+            return
+          }
           if (msg.event === 'scene_state' || msg.event === 'scene_update') {
             const data = msg.data != null && typeof msg.data === 'object'
               ? msg.data
@@ -115,6 +140,15 @@ export function useRoomGameSocket(roomId) {
             })
           }
         } catch (e) {
+          const raw = String(event.data || '')
+          if (
+            raw.includes('game_ended') ||
+            raw.includes('game_end') ||
+            raw.includes('end_game')
+          ) {
+            setGameEnded(true)
+            return
+          }
           console.warn('useRoomGameSocket parse error', e)
         }
       }
