@@ -4,7 +4,7 @@ import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { usePlayerData } from '@/store/player'
 import { useRoomGameSocket } from '@/hooks/useRoomGameSocket'
 import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from '@/store/canvas'
-import { getSimulationState, postRtpCreateHeadquarters } from '@/api'
+import { getSimulationState, postRtpCreateHeadquarters, postHeadquartersAddCombatSection } from '@/api'
 import '../roles-theme.css'
 import './RTP.css'
 
@@ -19,13 +19,20 @@ function RTP() {
   const [zoom, setZoom] = useState(1)
   zoomRef.current = zoom
   const [headquartersCreated, setHeadquartersCreated] = useState(false)
+  const [combatSectionsAdded, setCombatSectionsAdded] = useState(0)
+  const MAX_COMBAT_SECTIONS = 2
 
   useEffect(() => {
     if (!roomId) return
     getSimulationState(roomId).then((s) => {
       if (s.headquarters_created) setHeadquartersCreated(true)
+      const n = Number(s.combat_sections_added)
+      if (!Number.isNaN(n) && n >= 0 && n <= MAX_COMBAT_SECTIONS) setCombatSectionsAdded(n)
     }).catch(() => {})
   }, [roomId])
+
+  /** РТП заблокирован после создания штаба или после добавления обоих боевых участков (БУ1 и БУ2) */
+  const rtpBlocked = headquartersCreated || combatSectionsAdded >= MAX_COMBAT_SECTIONS
 
   // Применить состояние сцены, пришедшее по сокету (другие игроки или восстановление из БД)
   useEffect(() => {
@@ -113,7 +120,7 @@ function RTP() {
         <div className="rtp-grid">
           <aside className="rtp-sidebar">
             <section className="panel panel-equipment">
-              <EquipmentPalette disabled={headquartersCreated} />
+              <EquipmentPalette disabled={rtpBlocked} />
             </section>
             <section className="panel panel-hq">
               <button
@@ -128,9 +135,32 @@ function RTP() {
                   }
                   setHeadquartersCreated(true)
                 }}
+                disabled={rtpBlocked}
               >
                 Создание штаба
               </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-create-hq mt-2"
+                onClick={async () => {
+                  if (combatSectionsAdded >= MAX_COMBAT_SECTIONS || !roomId) return
+                  try {
+                    const res = await postHeadquartersAddCombatSection(roomId)
+                    const n = Number(res.combat_sections_added)
+                    if (!Number.isNaN(n)) setCombatSectionsAdded(n)
+                  } catch (_) {}
+                }}
+                disabled={headquartersCreated || combatSectionsAdded >= MAX_COMBAT_SECTIONS}
+              >
+                {combatSectionsAdded === 0 ? 'Добавить БУ1' : 'Добавить БУ2'}
+              </button>
+              {(combatSectionsAdded > 0 || headquartersCreated) && (
+                <p className="panel-hint mt-2 text-xs opacity-80">
+                  {headquartersCreated && 'Штаб создан. '}
+                  {combatSectionsAdded >= 1 && `Боевых участков: ${combatSectionsAdded}. `}
+                  {rtpBlocked && 'Схема заблокирована.'}
+                </p>
+              )}
             </section>
             <section className="panel panel-otv">
               <h3>Остаток ОТВ на автомобилях</h3>
@@ -190,12 +220,14 @@ function RTP() {
               onRemove={handleRemove}
               onScaleChange={handleScaleChange}
               onRotationChange={handleRotationChange}
-              readOnly={headquartersCreated}
+              readOnly={rtpBlocked}
               zoom={zoom}
               roomId={roomId}
             />
-            {headquartersCreated && (
-              <p className="scheme-lock-hint">После создания штаба схема заблокирована для редактирования.</p>
+            {rtpBlocked && (
+              <p className="scheme-lock-hint">
+                {headquartersCreated ? 'После создания штаба' : 'После добавления боевого участка'} схема заблокирована для редактирования.
+              </p>
             )}
           </section>
         </div>
