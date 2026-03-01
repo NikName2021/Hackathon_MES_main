@@ -255,7 +255,7 @@ async def create_room_params(
 @router.get("/room-params/{room_id}", response_model=ParamsMapOut)
 async def get_room_params(
         room_id: str,
-        _: object = Depends(require_admin),
+        # _: object = Depends(require_admin),
         db: AsyncSession = Depends(async_get_db),
 ):
     """Получить параметры карты комнаты."""
