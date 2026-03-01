@@ -254,9 +254,9 @@ export async function getRoomParams(room_id: string) {
         | string
         | undefined;
       const message = typeof payload === "string" ? payload : payload?.detail;
-      throw new Error(message || "?????? ????????");
+      throw new Error(message);
     }
-    throw new Error("?????? ????????");
+    throw new Error("неизвестная ошибка");
   }
 }
 
