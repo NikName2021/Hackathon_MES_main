@@ -13,8 +13,16 @@ from shapely.ops import unary_union
 # room_id -> (building_polygon, fire_point, speed_units_per_sec)
 _room_data: Dict[str, Tuple[Any, Tuple[float, float], float]] = {}
 
-FIRE_SPEED_BASE = 8.0  # единиц в секунду (радиус расширения)
-WIND_FACTOR = 0.5      # влияние ветра на скорость
+# ═══════════════════════════════════════════════════════════════════════════════
+# СКОРОСТЬ РАСПРОСТРАНЕНИЯ ОГНЯ
+# Файл: src/app/services/fire_local.py
+#
+# FIRE_SPEED_BASE — базовая скорость (единиц радиуса в секунду). Меньше = медленнее.
+# Типичные значения: 1.0–2.0 (медленно), 3.0–5.0 (средне), 6.0+ (быстро).
+# WIND_FACTOR — насколько ветер ускоряет огонь (множитель к скорости).
+# ═══════════════════════════════════════════════════════════════════════════════
+FIRE_SPEED_BASE = 1.0  # единиц в секунду (радиус расширения) — увеличьте для ускорения
+WIND_FACTOR = 0.2    # влияние ветра на скорость (0 = без влияния)
 
 
 def _get_float(obj: Dict[str, Any], *keys: str, default: float = 0.0) -> float:
@@ -84,10 +92,11 @@ def init_fire_local(
     wind_speed: float = 15.0,
     ambient_temperature: float = 40.0,
 ) -> None:
-    """Инициализирует сцену огня для комнаты (здание + очаг). Скорость зависит от ветра и температуры."""
+    """Инициализирует сцену огня для комнаты (здание + очаг). Скорость зависит от FIRE_SPEED_BASE, ветра и температуры."""
     building, fire_point = _canvas_to_building_and_fire(objects)
+    # Основная скорость задаётся FIRE_SPEED_BASE выше; ветер и температура дают небольшой множитель
     speed = FIRE_SPEED_BASE * (1.0 + wind_speed * 0.02) * (1.0 + (ambient_temperature - 20) * 0.01)
-    speed = max(speed, 1.0)
+    speed = max(speed, 0.5)
     _room_data[room_id] = (building, fire_point, speed)
 
 
