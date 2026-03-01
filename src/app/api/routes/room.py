@@ -12,8 +12,10 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from core.config import async_get_db, BASE_URL, sessionmaker
 from core.ws_manager import manager
-from database import User, Room, Invite, RoleEnum, Admin, RoomState
+from database import User, Room, Invite, RoleEnum, Admin, RoomState, RoomObjects, RoomParams
 from helpers import require_admin, require_admin_or_any_user
+from services.fire_model_client import init_fire_scene, get_fire_state
+from services.fire_local import init_fire_local, get_fire_state_local
 from schemas.rooms import RoomCreatedOut, InviteLinkOut, RoomStatusOut, RoomAddCreated
 
 UPLOAD_DIR = Path("uploads")
@@ -97,6 +99,21 @@ async def get_room_status(
 
     await db.commit()
 
+    # Инициализация модели распространения огня: здание + очаг из объектов канваса, параметры из room_params
+    try:
+        obj_result = await db.execute(select(RoomObjects).where(RoomObjects.room_id == room_id))
+        room_objects_row = obj_result.scalar_one_or_none()
+        params_result = await db.execute(select(RoomParams).where(RoomParams.room_id == room_id))
+        params_row = params_result.scalar_one_or_none()
+        raw_payload = getattr(room_objects_row, "payload", None) if room_objects_row else None
+        objects_list = list(raw_payload) if raw_payload and isinstance(raw_payload, (list, tuple)) else []
+        wind = float(params_row.wind) if params_row else 15.0
+        temperature = float(params_row.temperature) if params_row else 40.0
+        await init_fire_scene(room_id, objects_list, wind_speed=wind, ambient_temperature=temperature)
+        init_fire_local(room_id, objects_list, wind_speed=wind, ambient_temperature=temperature)
+    except Exception:
+        pass  # не блокируем сохранение комнаты при недоступности fire-model
+
     return RoomAddCreated(
         invites=invites_out,
     )
@@ -119,6 +136,46 @@ async def get_room_timer(
     state_row = state_result.scalar_one_or_none()
     payload = state_row.payload if state_row and state_row.payload else {}
     return {"room_id": room_id, "timer_started_at": payload.get("timer_started_at")}
+
+
+async def _ensure_fire_scene_inited(room_id: str, db: AsyncSession) -> None:
+    """Инициализирует сцену огня для комнаты (объекты + параметры из БД): HTTP fire-model и локальный расчёт."""
+    obj_result = await db.execute(select(RoomObjects).where(RoomObjects.room_id == room_id))
+    room_objects_row = obj_result.scalar_one_or_none()
+    params_result = await db.execute(select(RoomParams).where(RoomParams.room_id == room_id))
+    params_row = params_result.scalar_one_or_none()
+    raw_payload = getattr(room_objects_row, "payload", None) if room_objects_row else None
+    objects_list = list(raw_payload) if raw_payload and isinstance(raw_payload, (list, tuple)) else []
+    wind = float(params_row.wind) if params_row else 15.0
+    temperature = float(params_row.temperature) if params_row else 40.0
+    await init_fire_scene(room_id, objects_list, wind_speed=wind, ambient_temperature=temperature)
+    init_fire_local(room_id, objects_list, wind_speed=wind, ambient_temperature=temperature)
+
+
+@router.get("/{room_id}/fire")
+async def get_room_fire_state(
+        room_id: str,
+        time: float = Query(0.0, description="Время симуляции в секундах (элапс с момента старта)"),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Состояние распространения огня для комнаты в момент времени time.
+    Прокси к сервису модели огня. Без авторизации — доступно всем ролям.
+    При пустом ответе от модели делается попытка инициализировать сцену из БД и повторить запрос.
+    """
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    state = await get_fire_state(room_id, time)
+    if state is None:
+        await _ensure_fire_scene_inited(room_id, db)
+        state = await get_fire_state(room_id, time)
+    if state is None:
+        state = get_fire_state_local(room_id, time)
+    if state is None:
+        return {"time": time, "building": None, "fire": None, "bbox": None, "max_time": 0.0}
+    return state
 
 
 @router.get("/{room_id}/simulation-state")

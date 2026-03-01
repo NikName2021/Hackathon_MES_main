@@ -192,6 +192,7 @@ function RTP() {
               onRotationChange={handleRotationChange}
               readOnly={headquartersCreated}
               zoom={zoom}
+              roomId={roomId}
             />
             {headquartersCreated && (
               <p className="scheme-lock-hint">После создания штаба схема заблокирована для редактирования.</p>

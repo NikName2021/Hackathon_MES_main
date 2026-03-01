@@ -44,6 +44,9 @@ APP_DOMAIN: str = config("APP_DOMAIN", cast=str, default="")
 FRONTEND_BASE_URL: str = config("FRONTEND_BASE_URL", cast=str, default="")
 BASE_URL = FRONTEND_BASE_URL or (f"https://{APP_DOMAIN}" if APP_DOMAIN else "http://localhost")
 
+# Модель распространения огня (docker: http://fire-model:7000, локально: http://localhost:7000)
+FIRE_MODEL_URL: str = config("FIRE_MODEL_URL", cast=str, default="http://localhost:7000")
+
 engine = create_async_engine(
     get_db_path(POSTGRES_USER, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB,
                 POSTGRES_PASSWORD))

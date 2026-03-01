@@ -277,7 +277,7 @@ function Dispatcher() {
                 Схема расстановки сил и средств, формируемая руководителем учебного занятия
                 и передаваемая с бэкенда.
               </p>
-              <SchemeCanvas placedItems={[]} readOnly zoom={1} />
+              <SchemeCanvas placedItems={[]} readOnly zoom={1} roomId={roomId} />
             </div>
 
             <section className="panel panel-dispatch">

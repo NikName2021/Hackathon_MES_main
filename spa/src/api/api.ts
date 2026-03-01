@@ -281,6 +281,30 @@ export async function getRoomTimer(room_id: string): Promise<RoomTimerResponse> 
   return data;
 }
 
+/** Состояние распространения огня в момент времени time (секунды с начала симуляции) */
+export interface RoomFireStateResponse {
+  time: number;
+  max_time: number;
+  building: GeoJSONPolygon | null;
+  fire: GeoJSONPolygon | null;
+  bbox: [number, number, number, number] | null;
+}
+
+interface GeoJSONPolygon {
+  type: string;
+  coordinates: number[][][] | number[][][][];
+}
+
+export async function getRoomFireState(
+  room_id: string,
+  time: number
+): Promise<RoomFireStateResponse> {
+  const { data } = await api.get<RoomFireStateResponse>(`room/${room_id}/fire`, {
+    params: { time: Math.max(0, time) },
+  });
+  return data;
+}
+
 /** Состояние симуляции: таймер и высылка техники диспетчером */
 export interface DispatcherDispatchItem {
   vehicleId: string;
