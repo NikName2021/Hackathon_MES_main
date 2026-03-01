@@ -77,11 +77,35 @@ export function useRoomGameSocket(roomId) {
             const data = msg.data != null && typeof msg.data === 'object'
               ? msg.data
               : {}
-            setRemoteState({
-              placedItems: Array.isArray(data.placedItems) ? data.placedItems : [],
-              zoom: typeof data.zoom === 'number' ? data.zoom : 1,
-              canvasBackground: data.canvasBackground ?? null,
-              canvasObjects: Array.isArray(data.canvasObjects) ? data.canvasObjects : [],
+            const hasPlacedItems = Object.prototype.hasOwnProperty.call(data, 'placedItems')
+            const hasZoom = Object.prototype.hasOwnProperty.call(data, 'zoom')
+            const hasCanvasBackground = Object.prototype.hasOwnProperty.call(data, 'canvasBackground')
+            const hasCanvasObjects = Object.prototype.hasOwnProperty.call(data, 'canvasObjects')
+
+            setRemoteState((prev) => {
+              const base = prev || {
+                placedItems: [],
+                zoom: 1,
+                canvasBackground: null,
+                canvasObjects: [],
+                canvasObjectsProvided: false,
+              }
+
+              return {
+                placedItems: hasPlacedItems
+                  ? (Array.isArray(data.placedItems) ? data.placedItems : [])
+                  : base.placedItems,
+                zoom: hasZoom
+                  ? (typeof data.zoom === 'number' ? data.zoom : base.zoom)
+                  : base.zoom,
+                canvasBackground: hasCanvasBackground
+                  ? (data.canvasBackground ?? null)
+                  : base.canvasBackground,
+                canvasObjects: hasCanvasObjects
+                  ? (Array.isArray(data.canvasObjects) ? data.canvasObjects : [])
+                  : base.canvasObjects,
+                canvasObjectsProvided: hasCanvasObjects,
+              }
             })
           }
         } catch (e) {

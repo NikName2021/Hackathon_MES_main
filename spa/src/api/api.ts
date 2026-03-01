@@ -1,12 +1,13 @@
+import { setToken } from "@/store/auth";
 import axios from "axios";
 import { withAuth } from "@/utils/withAuth";
-import { setToken } from "@/store/auth";
 import { setRoomData, setRoomId } from "@/store/room";
 import { setCanvasObjects } from "@/store/canvas";
 import { setPlayerData } from "@/store/player";
 import type { RoomData, roomId } from "@/types/room.types";
 import type { InviteRoomResponse } from "@/types/invite.types";
 import type { CanvasObject } from "@/types/canvas.types";
+import type { RoomParamsResponse } from "@/types/room-params.types";
 
 const API_URL = (import.meta.env.VITE_API_URL as string)?.trim() || "";
 
@@ -95,11 +96,11 @@ export async function getInviteRoom(inviteToken: string, username: string) {
     const { data } = await api.get<InviteRoomResponse>("invite/room", {
       params: { invite_token: inviteToken, username },
     });
+    setRoomId(data.room_id);
     setPlayerData(data, inviteToken);
     const accessToken =
-      data.tokens?.access_token ??
-      (data as unknown as { access_token?: { access_token?: string } })
-        .access_token?.access_token;
+      data.tokens?.access_token ?? 
+      (data as unknown as { access_token?: { access_token?: string } }).access_token?.access_token;
     if (accessToken) {
       setToken(accessToken);
     }
@@ -162,11 +163,11 @@ export async function registerImage(room_id: string, objects: CanvasObject[]) {
   }
 }
 
-
 interface CanvasObjectResponse {
-  objects: CanvasObject[]
-  room_id: string
+  objects: CanvasObject[];
+  room_id: string;
 }
+
 export async function getRoomObjects(room_id: string) {
   try {
     const { data } = await apiAuth.get<CanvasObjectResponse>(`room_params/${room_id}/objects`);
@@ -233,7 +234,7 @@ export async function getRoomObjects(room_id: string) {
         | string
         | undefined;
       const message = typeof payload === "string" ? payload : payload?.detail;
-      throw new Error(message)
+      throw new Error(message);
     }
     throw new Error("неизвестная ошибка");
   }
@@ -244,6 +245,24 @@ export interface RoomStateResponse {
   state: { timer_started_at?: string };
 }
 
+export async function getRoomParams(room_id: string) {
+  try {
+    const { data } = await api.get<RoomParamsResponse>(
+      `room_params/room-params/${room_id}`
+    );
+    return data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message);
+    }
+    throw new Error("неизвестная ошибка");
+  }
+}
 export async function getRoomState(room_id: string): Promise<RoomStateResponse> {
   const { data } = await apiAuth.get<RoomStateResponse>(`room/${room_id}/state`);
   return data;
@@ -319,4 +338,3 @@ export async function postDispatcherDispatch(
   );
   return data;
 }
-

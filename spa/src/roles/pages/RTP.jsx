@@ -38,7 +38,7 @@ function RTP() {
     if (remoteState.canvasBackground !== undefined) {
       setCanvasBackgroundUrl(remoteState.canvasBackground ?? null)
     }
-    if (Array.isArray(remoteState.canvasObjects)) {
+    if (remoteState.canvasObjectsProvided && Array.isArray(remoteState.canvasObjects)) {
       setCanvasObjects(remoteState.canvasObjects)
     }
   }, [remoteState])
