@@ -204,12 +204,14 @@ async def get_simulation_state(
         combat_sections_added = 0
     if combat_sections_added > 2:
         combat_sections_added = 2
+    game_ended = bool(payload.get("game_ended"))
     return {
         "room_id": room_id,
         "timer_started_at": payload.get("timer_started_at"),
         "dispatcher_dispatches": dispatches,
         "headquarters_created": headquarters_created,
         "combat_sections_added": combat_sections_added,
+        "game_ended": game_ended,
     }
 
 
@@ -326,6 +328,39 @@ async def get_room_state(
     state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
     state_row = state_result.scalar_one_or_none()
     return {"room_id": room_id, "state": state_row.payload if state_row else {}}
+
+
+@router.post("/{room_id}/end-game")
+async def end_game(
+        room_id: str,
+        current_user: Admin = Depends(require_admin),
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Администратор завершает игру. Все игроки получают событие game_ended по WebSocket.
+    """
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    raw = state_row.payload if state_row and state_row.payload is not None else {}
+    payload = dict(raw) if isinstance(raw, dict) else {}
+    payload["game_ended"] = True
+
+    if state_row:
+        state_row.payload = payload
+        flag_modified(state_row, "payload")
+    else:
+        db.add(RoomState(room_id=room_id, payload=payload))
+
+    await db.commit()
+
+    await manager.broadcast_scene_update(room_id, {"game_ended": True})
+
+    return {"ok": True, "message": "Игра завершена"}
 
 
 @router.get("/rooms/{room_id}", response_model=RoomStatusOut)

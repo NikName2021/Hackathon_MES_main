@@ -57,6 +57,31 @@ function Dispatcher() {
   const [routeError, setRouteError] = useState(null)
   const [dispatchError, setDispatchError] = useState(null)
 
+  const formatTimeValue = (value) => {
+    if (!value) return ''
+    const raw = String(value)
+    const match = raw.match(/(\d{1,2}:\d{2})(?::\d{2})?/)
+    if (match) return match[1]
+    return raw
+  }
+
+  const mapNearbyWater = (params) => {
+    const value =
+      params?.water_nearby ??
+      params?.waterNearby ??
+      params?.near_water ??
+      params?.nearby_water ??
+      params?.water ??
+      params?.serviceability_water
+    if (typeof value === 'boolean') return value ? 'Да' : 'Нет'
+    if (typeof value === 'string') {
+      const raw = value.toLowerCase()
+      if (['yes', 'true', '1', 'да', 'есть'].includes(raw)) return 'Да'
+      if (['no', 'false', '0', 'нет'].includes(raw)) return 'Нет'
+    }
+    return ''
+  }
+
   useEffect(() => {
     if (!activeRoomId) return
     let active = true
@@ -72,13 +97,8 @@ function Dispatcher() {
           params?.temperature !== undefined && params?.temperature !== null
             ? `${params.temperature > 0 ? '+' : ''}${params.temperature} °C`
             : ''
-        const timeValue = params?.time ? String(params.time) : ''
-        const waterNearbyValue =
-          typeof params?.serviceability_water === 'boolean'
-            ? params.serviceability_water
-              ? 'Да'
-              : 'Нет'
-            : params?.serviceability_water ? 'Да' : 'Нет'
+        const timeValue = formatTimeValue(params?.time)
+        const waterNearbyValue = mapNearbyWater(params)
         const addressValue = params?.address ? String(params.address) : ''
         setScenario({
           wind: windValue,
