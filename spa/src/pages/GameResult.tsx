@@ -42,7 +42,7 @@ export const GameResultPage = () => {
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-6 px-6 py-14 text-center">
           <h1 className="text-3xl font-semibold">Итоги игры</h1>
           <p className="text-white/70">
-            Итоги не сформированы. Завершите игру из комнаты администратора.
+            Итоги сформированы. Симуляция завершена.
           </p>
           <Button
             size="lg"
