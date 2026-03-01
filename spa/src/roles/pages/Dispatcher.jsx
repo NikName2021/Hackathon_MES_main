@@ -2,6 +2,9 @@ import { useState } from 'react'
 import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { DISPATCH_VEHICLES } from '../data/vehicleConfig'
 import { getRouteDuration } from '../api/geo2gis'
+import { postDispatcherDispatch } from '@/api'
+import { usePlayerData } from '@/store/player'
+import { useRoomId } from '@/store/room'
 import '../roles-theme.css'
 import './Dispatcher.css'
 
@@ -20,6 +23,10 @@ function DispatchVehicleImage({ vehicle, className }) {
 }
 
 function Dispatcher() {
+  const playerData = usePlayerData()
+  const storedRoomId = useRoomId()
+  const roomId = playerData?.room_id ?? storedRoomId ?? null
+
   const [scenario, setScenario] = useState({
     wind: '',
     temperature: '',
@@ -99,6 +106,15 @@ function Dispatcher() {
     const qty = dispatchQuantities[vehicle.id] || 0
     const eta = dispatchEta[vehicle.id] || ''
     if (qty < 1 || !eta) return
+    const etaNum = parseInt(eta, 10) || 0
+    if (roomId && etaNum > 0) {
+      postDispatcherDispatch(roomId, {
+        vehicleId: vehicle.id,
+        vehicleName: vehicle.name,
+        count: qty,
+        etaMinutes: etaNum,
+      }).catch(() => {})
+    }
     setDispatches((prev) => [
       ...prev,
       {

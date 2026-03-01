@@ -4,6 +4,8 @@ import { getRoomObjects } from "@/api";
 import { usePlayerData } from "@/store/player";
 import { useRoomId } from "@/store/room";
 import { RadioWidget } from "./RadioWidget";
+import { RoomTimer } from "./RoomTimer";
+import { SimulationGate } from "./SimulationGate";
 
 type RolePageLayoutProps = {
   children: ReactNode;
@@ -35,9 +37,18 @@ export function RolePageLayout({ children }: RolePageLayoutProps) {
     };
   }, [activeRoomId]);
 
+  const role = data?.role ?? "";
+
   return (
     <>
-      {children}
+      {activeRoomId && <RoomTimer roomId={activeRoomId} />}
+      {activeRoomId && role ? (
+        <SimulationGate roomId={activeRoomId} role={role}>
+          {children}
+        </SimulationGate>
+      ) : (
+        children
+      )}
       {data?.room_id && data?.username && (
         <RadioWidget
           roomId={data.room_id}

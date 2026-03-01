@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioWidget } from "@/components/RadioWidget";
+import { RoomTimer } from "@/components/RoomTimer";
 import { useRoomId, useRoomInvites } from "@/store/room";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ export const RoomPage = () => {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
+      {roomCode && roomCode !== "—" && <RoomTimer roomId={roomCode} />}
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-14">
         <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
