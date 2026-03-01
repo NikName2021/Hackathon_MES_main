@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import {useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,6 @@ import { useRoomGameSocket } from "@/hooks/useRoomGameSocket";
 import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
 import { useRoomId, useRoomInvites } from "@/store/room";
 import { setGameSummary } from "@/store/gameSummary";
-import { PATHS } from "@/config/paths";
 import { getSimulationState, postEndGame } from "@/api";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -23,7 +22,6 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export const RoomPage = () => {
-  const navigate = useNavigate();
   const { roomId: paramRoomId } = useParams();
   const storedRoomId = useRoomId();
   const invites = useRoomInvites();
