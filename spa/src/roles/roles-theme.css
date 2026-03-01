@@ -1,0 +1,406 @@
+/**
+ * Общий стиль страниц ролей: как страницы авторизации/комнат.
+ * Акцент: #01437b
+ */
+.role-layout {
+  --role-accent: #01437b;
+  --role-accent-light: #0a5a9e;
+  --role-accent-muted: rgba(1, 67, 123, 0.35);
+  --role-panel-bg: rgba(255, 255, 255, 0.05);
+  --role-panel-border: rgba(255, 255, 255, 0.1);
+  --role-text: #f1f5f9;
+  --role-text-muted: rgba(255, 255, 255, 0.7);
+  --role-input-bg: rgba(255, 255, 255, 0.95);
+  --role-input-text: #0f172a;
+}
+
+.role-layout .page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: var(--role-text);
+  letter-spacing: -0.02em;
+}
+
+/* Панели как карточки авторизации */
+.role-layout .panel,
+.role-layout .dispatcher-sidebar .panel,
+.role-layout .dispatcher-scheme-area,
+.role-layout .rtp-sidebar .panel,
+.role-layout .rtp-scheme-area,
+.role-layout .panel-dispatch,
+.role-layout .panel-protocol,
+.role-layout .panel-intro,
+.role-layout .panel-scenario,
+.role-layout .panel-equipment,
+.role-layout .panel-hq {
+  background: var(--role-panel-bg) !important;
+  border: 1px solid var(--role-panel-border) !important;
+  border-radius: 1rem;
+  padding: 1rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+.role-layout .panel h3,
+.role-layout .dispatcher-scheme-area h3,
+.role-layout .rtp-scheme-area .scheme-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--role-accent-light);
+}
+
+.role-layout .panel-hint,
+.role-layout .equipment-palette-hint {
+  font-size: 0.8rem;
+  color: var(--role-text-muted);
+  margin: 0 0 0.75rem 0;
+}
+
+.role-layout .intro-list,
+.role-layout .scenario-grid .form-field,
+.role-layout .combat-sections-status .sections-list {
+  color: var(--role-text-muted);
+}
+
+.role-layout .intro-list li {
+  color: var(--role-text-muted);
+}
+
+/* Кнопки */
+.role-layout .btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s, transform 0.05s;
+}
+
+.role-layout .btn:active {
+  transform: scale(0.98);
+}
+
+.role-layout .btn-primary {
+  background: linear-gradient(135deg, #01315c 0%, var(--role-accent-light) 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 16px var(--role-accent-muted);
+}
+
+.role-layout .btn-primary:hover {
+  opacity: 0.95;
+}
+
+.role-layout .btn-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--role-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.role-layout .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.role-layout .btn-create-hq {
+  background: linear-gradient(135deg, #01315c 0%, var(--role-accent-light) 100%) !important;
+  color: #fff !important;
+}
+
+/* Поля ввода */
+.role-layout .form-field input,
+.role-layout .form-field select,
+.role-layout .protocol-form input,
+.role-layout .dispatch-route-block input {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--role-input-bg);
+  color: var(--role-input-text);
+  font-size: 0.9rem;
+}
+
+.role-layout .form-field span,
+.role-layout .form-field label {
+  color: var(--role-text-muted);
+  font-size: 0.85rem;
+}
+
+.role-layout .dispatch-address-readonly input {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--role-text);
+  border-color: var(--role-panel-border);
+}
+
+/* Блок «Расчёт времени доставки» — аккуратный и читаемый */
+.role-layout .dispatch-route-block {
+  background: rgba(1, 67, 123, 0.08);
+  border: 1px solid rgba(1, 67, 123, 0.25);
+  border-radius: 1rem;
+  padding: 1.25rem 1.25rem 1rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--role-accent-light);
+}
+
+.role-layout .dispatch-route-block h4 {
+  color: var(--role-accent-light);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  letter-spacing: 0.02em;
+}
+
+.role-layout .dispatch-route-block .form-field {
+  margin-bottom: 0.75rem;
+}
+
+.role-layout .dispatch-route-block .form-field:last-of-type {
+  margin-bottom: 0.5rem;
+}
+
+.role-layout .dispatch-route-block .form-field span {
+  color: var(--role-text-muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.role-layout .dispatch-route-block .form-field input {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.role-layout .dispatch-route-block .dispatch-address-readonly input {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--role-text);
+}
+
+.role-layout .dispatch-route-coords {
+  color: var(--role-text-muted);
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0.75rem;
+  font-family: ui-monospace, monospace;
+  line-height: 1.4;
+}
+
+.role-layout .dispatch-route-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--role-panel-border);
+}
+
+.role-layout .dispatch-route-result {
+  color: var(--role-accent-light);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.role-layout .dispatch-route-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* Исходные данные сценария — только для чтения, аккуратный вывод */
+.role-layout .panel-scenario .form-field input,
+.role-layout .panel-scenario .form-field select {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--role-text);
+  border-color: var(--role-panel-border);
+  cursor: default;
+}
+
+.role-layout .panel-scenario .form-field span {
+  color: var(--role-text-muted);
+}
+
+/* Высылка сил и средств — ограниченная высота, прокрутка */
+.role-layout .panel-dispatch {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(85vh, 720px);
+  overflow-y: auto;
+}
+
+.role-layout .panel-dispatch .dispatch-vehicles-grid,
+.role-layout .panel-dispatch .dispatch-sent-section {
+  flex-shrink: 0;
+}
+
+/* Карточки техники диспетчера */
+.role-layout .dispatch-vehicle-card,
+.role-layout .dispatch-sent-item {
+  background: var(--role-panel-bg) !important;
+  border: 1px solid var(--role-panel-border) !important;
+  border-radius: 1rem;
+}
+
+.role-layout .dispatch-vehicle-name,
+.role-layout .dispatch-vehicle-ttx,
+.role-layout .dispatch-sent-item {
+  color: var(--role-text) !important;
+}
+
+.role-layout .dispatch-vehicle-ttx {
+  color: var(--role-text-muted) !important;
+}
+
+.role-layout .dispatch-vehicle-photo,
+.role-layout .dispatch-sent-photo {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+}
+
+.role-layout .dispatch-sent-section h4,
+.role-layout .dispatch-meta {
+  color: var(--role-text-muted);
+}
+
+/* Таблица протокола */
+.role-layout .protocol-table th,
+.role-layout .protocol-table td {
+  border-color: var(--role-panel-border);
+  color: var(--role-text);
+}
+
+.role-layout .protocol-table th {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--role-accent-light);
+}
+
+.role-layout .empty-state {
+  color: var(--role-text-muted);
+}
+
+/* Схема расстановки сил — белый фон у всех ролей */
+.role-layout .scheme-canvas,
+.role-layout .rtp-canvas,
+.role-layout .dispatcher-scheme-area .scheme-canvas {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.75rem;
+  min-height: 500px;
+}
+
+.role-layout .scheme-placeholder {
+  color: #64748b;
+}
+
+/* Zoom controls */
+.role-layout .scheme-zoom-controls {
+  color: var(--role-text-muted);
+}
+
+.role-layout .scheme-zoom-controls button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--role-panel-border);
+  color: var(--role-text);
+}
+
+.role-layout .scheme-zoom-controls button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.role-layout .scheme-lock-hint {
+  background: rgba(1, 67, 123, 0.2);
+  border: 1px solid var(--role-accent-muted);
+  color: var(--role-accent-light);
+}
+
+/* OTV бары */
+.role-layout .otv-bar {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.role-layout .otv-fill {
+  background: var(--role-accent) !important;
+}
+
+.role-layout .vehicle-name,
+.role-layout .otv-row span {
+  color: var(--role-text);
+}
+
+.role-layout .otv-row span:first-child,
+.role-layout .otv-row span:last-child {
+  color: var(--role-text-muted);
+}
+
+/* Палитра оборудования */
+.role-layout .equipment-palette h3 {
+  color: var(--role-accent-light);
+}
+
+.role-layout .equipment-block {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--role-panel-border) !important;
+  border-radius: 0.75rem;
+}
+
+.role-layout .equipment-block-title {
+  color: var(--role-text);
+}
+
+.role-layout .equipment-block-header {
+  border-bottom-color: var(--role-panel-border);
+}
+
+.role-layout .equipment-item {
+  background: var(--role-panel-bg) !important;
+  border: 1px solid var(--role-panel-border) !important;
+}
+
+.role-layout .equipment-item:hover {
+  border-color: var(--role-accent-light) !important;
+  background: rgba(1, 67, 123, 0.15) !important;
+}
+
+.role-layout .equipment-tooltip {
+  background: #1e293b;
+  border: 1px solid var(--role-accent-muted);
+  color: var(--role-text);
+}
+
+.role-layout .equipment-tooltip-name {
+  color: var(--role-accent-light);
+}
+
+.role-layout .equipment-tooltip-ttx {
+  color: var(--role-text-muted);
+}
+
+/* Элементы на схеме (SchemeCanvas) */
+.role-layout .scheme-item-btn {
+  background: var(--role-panel-bg) !important;
+  border-color: var(--role-panel-border);
+  color: var(--role-text);
+}
+
+.role-layout .scheme-item:hover .scheme-item-btn {
+  border-color: var(--role-accent-light);
+}
+
+.role-layout .scheme-item-rotate-handle:hover,
+.role-layout .scheme-item-resize-handle:hover::after {
+  border-color: transparent transparent var(--role-accent-light) transparent;
+}
+
+.role-layout .scheme-item-label {
+  color: var(--role-text-muted);
+}
+
+.role-layout .scheme-canvas-dragover {
+  border-color: var(--role-accent-light);
+  background: var(--role-accent-muted);
+}

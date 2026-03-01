@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from database import User, Settings, IssuedJWTToken
+from database import User, AdminIssuedJWTToken
 
 """class User(DeclBase):
     __tablename__ = "user"
@@ -61,23 +61,23 @@ class UserRepository:
         return user
 
     @staticmethod
-    async def get_user_settings(user_id: int, session: AsyncSession):
-        stmt = select(Settings).where(Settings.user_id == user_id)
-        settings = await session.execute(stmt)
-        return settings.scalar()
+    # async def get_user_settings(user_id: int, session: AsyncSession):
+    #     stmt = select(Settings).where(Settings.user_id == user_id)
+    #     settings = await session.execute(stmt)
+    #     return settings.scalar()
+    #
+    # @staticmethod
+    # async def create_settings(settings_dto: SettingDTO, session: AsyncSession) -> Settings:
+    #     setting = Settings(**settings_dto.model_dump())
+    #     session.add(setting)
+    #     await session.commit()
+    #     await session.refresh(setting)
+    #     return setting
+
 
     @staticmethod
-    async def create_settings(settings_dto: SettingDTO, session: AsyncSession) -> Settings:
-        setting = Settings(**settings_dto.model_dump())
-        session.add(setting)
-        await session.commit()
-        await session.refresh(setting)
-        return setting
-
-
-    @staticmethod
-    async def create_refresh(jwt_dto: IssuedJWTTokenDTO, session: AsyncSession) -> IssuedJWTToken:
-        jwt = IssuedJWTToken(**jwt_dto.model_dump())
+    async def create_refresh(jwt_dto: IssuedJWTTokenDTO, session: AsyncSession) -> AdminIssuedJWTToken:
+        jwt = AdminIssuedJWTToken(**jwt_dto.model_dump())
         session.add(jwt)
         await session.commit()
         await session.refresh(jwt)

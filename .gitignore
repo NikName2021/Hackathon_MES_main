@@ -19,3 +19,7 @@ spa/package-lock.json
 /spa/.env
 /spa/.env.prod
 /spa/.env.development
+/spa/nginx/local_nginx.conf
+/server/
+/src/app/uploads/
+docker-compose.override.yml

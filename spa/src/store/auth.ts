@@ -12,7 +12,7 @@ type AuthStateFunc =  {
 
 type AuthState = AuthStateData & AuthStateFunc;
 
-const useAuthStore = create<AuthState>()(
+export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,

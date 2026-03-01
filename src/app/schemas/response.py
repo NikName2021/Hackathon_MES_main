@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from database import Role
+from database import RoleEnum
 
 
 class ParticipantResponse(BaseModel):
@@ -21,9 +21,9 @@ class ParticipantResponse(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    email: str
+    # email: str
     username: str
-    role: Role
+    # role: RoleEnum
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,7 +31,7 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: UserResponse
+    user: UserResponse | None = None
 
 
 class EventResponse(BaseModel):

@@ -16,8 +16,9 @@ config = Config(".env")
 API_PREFIX = "/api"
 VERSION = "0.1.0"
 DEBUG: bool = config("DEBUG", cast=bool, default=False)
-SECRET_KEY: Secret = config("SECRET_KEY", cast=Secret, default="")
+SECRET_KEY: Secret = config("SECRET_KEY", cast=Secret, default="vhfhfhfhfh")
 MEMOIZATION_FLAG: bool = config("MEMOIZATION_FLAG", cast=bool, default=True)
+
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -34,7 +35,14 @@ POSTGRES_USER: str = config("POSTGRES_USER", cast=str, default="postgres")
 POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", cast=str, default="<PASSWORD>")
 POSTGRES_DB: str = config("POSTGRES_DATABASE", cast=str, default="postgres")
 
-BOT_TOKEN: str = config("BOT_TOKEN", cast=str, default="")
+ADMIN_USERNAME: str = config("USERNAME", cast=str, default="admin")
+ADMIN_PASSWORD: str = config("PASSWORD", cast=str, default="admin")
+
+
+APP_DOMAIN: str = config("APP_DOMAIN", cast=str, default="")
+# URL для ссылок-приглашений (должен указывать на фронт, где открывается /join/...)
+FRONTEND_BASE_URL: str = config("FRONTEND_BASE_URL", cast=str, default="")
+BASE_URL = FRONTEND_BASE_URL or (f"https://{APP_DOMAIN}" if APP_DOMAIN else "http://localhost")
 
 engine = create_async_engine(
     get_db_path(POSTGRES_USER, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB,

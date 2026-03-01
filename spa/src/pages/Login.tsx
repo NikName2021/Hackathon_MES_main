@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { PATHS } from "@/config/paths";
 import { useToken } from "@/store/auth";
+import { ButtonBack } from "@/components/ButtonBack";
 export function LoginPage() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +23,7 @@ export function LoginPage() {
 
     try {
       await loginRequest(login, password);
+      setIsChangeToken(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка входа");
     } finally {
@@ -44,12 +46,11 @@ export function LoginPage() {
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         {token && !isChangeToken ? (
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
-            <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
+            <ButtonBack/>
+            <div className="text-xs uppercase tracking-[0.3em] text-[var(--accent-light)] font-medium">
               Доступ
             </div>
-            <h1 className="mt-3 text-2xl font-semibold">
-              Вы уже вошли в систему
-            </h1>
+            <h1 className="mt-3 text-2xl font-semibold">Вы вошли в систему</h1>
             <p className="mt-3 text-sm text-white/70">
               Можете продолжить работу или войти под другим аккаунтом.
             </p>
@@ -75,7 +76,7 @@ export function LoginPage() {
               <MoveLeft className="h-4 w-4" />
               Назад
             </Button>
-            <div className="text-xs uppercase tracking-[0.3em] text-orange-300/80">
+            <div className="text-xs uppercase tracking-[0.3em] text-[var(--accent-light)] font-medium">
               Вход
             </div>
             <h1 className="mt-3 text-2xl font-semibold">Доступ в систему</h1>
@@ -103,7 +104,8 @@ export function LoginPage() {
             <Button
               type="submit"
               size="lg"
-              className="mt-6 h-12 w-full bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-base text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
+              className="mt-6 h-12 w-full text-base text-white shadow-lg hover:opacity-95 transition-opacity"
+              style={{ background: "linear-gradient(135deg, var(--accent-dark) 0%, var(--accent-light) 100%)", boxShadow: "0 4px 20px var(--accent-muted)" }}
               disabled={loading}
             >
               {loading ? "Входим..." : "Войти"}
