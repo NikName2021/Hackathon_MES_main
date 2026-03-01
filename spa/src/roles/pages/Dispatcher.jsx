@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { DISPATCH_VEHICLES } from '../data/vehicleConfig'
 import { getRouteDuration } from '../api/geo2gis'
+import { getRoomParams } from '../../api'
+import { usePlayerData } from '../../store/player'
+import { useRoomId } from '../../store/room'
 import '../roles-theme.css'
 import './Dispatcher.css'
 
@@ -20,6 +23,9 @@ function DispatchVehicleImage({ vehicle, className }) {
 }
 
 function Dispatcher() {
+  const playerData = usePlayerData()
+  const roomId = useRoomId()
+  const activeRoomId = playerData?.room_id ?? roomId
   const [scenario, setScenario] = useState({
     wind: '',
     temperature: '',
@@ -46,6 +52,51 @@ function Dispatcher() {
   const [fireCoords, setFireCoords] = useState(null)
   const [routeLoading, setRouteLoading] = useState(false)
   const [routeError, setRouteError] = useState(null)
+
+  const mapTimeToDayPart = (timeValue) => {
+    if (!timeValue) return ''
+    const hour = Number(String(timeValue).split(':')[0])
+    if (Number.isNaN(hour)) return ''
+    if (hour >= 6 && hour < 18) return 'day'
+    if (hour >= 18 && hour < 22) return 'evening'
+    return 'night'
+  }
+
+  useEffect(() => {
+    if (!activeRoomId) return
+    let active = true
+
+    getRoomParams(activeRoomId)
+      .then((params) => {
+        if (!active) return
+        const windValue =
+          params?.wind !== undefined && params?.wind !== null
+            ? `${params.wind} м/с`
+            : ''
+        const temperatureValue =
+          params?.temperature !== undefined && params?.temperature !== null
+            ? `${params.temperature > 0 ? '+' : ''}${params.temperature} °C`
+            : ''
+        const timeOfDayValue = mapTimeToDayPart(params?.time)
+        const waterValue =
+          typeof params?.serviceability_water === 'boolean'
+            ? params.serviceability_water
+              ? 'ok'
+              : 'fail'
+            : params?.serviceability_water || 'ok'
+        setScenario({
+          wind: windValue,
+          temperature: temperatureValue,
+          timeOfDay: timeOfDayValue,
+          waterSupply: waterValue,
+        })
+      })
+      .catch(() => {})
+
+    return () => {
+      active = false
+    }
+  }, [activeRoomId])
 
   const handleScenarioChange = (field, value) => {
     setScenario((prev) => ({ ...prev, [field]: value }))
