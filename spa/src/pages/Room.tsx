@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioWidget } from "@/components/RadioWidget";
 import { RoomTimer } from "@/components/RoomTimer";
+import { GameEndedOverlay } from "@/components/GameEndedOverlay";
 import SchemeCanvas from "@/roles/components/equipment/SchemeCanvas";
 import { useRoomGameSocket } from "@/hooks/useRoomGameSocket";
 import { setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
 import { useRoomId, useRoomInvites } from "@/store/room";
+import { postEndGame } from "@/api";
 
 const ROLE_LABELS: Record<string, string> = {
   dispatcher: "Диспетчер",
@@ -26,7 +28,8 @@ export const RoomPage = () => {
 
   const roomCode = paramRoomId ?? storedRoomId ?? "—";
   const wsRoomId = roomCode && roomCode !== "—" ? roomCode : null;
-  const { remoteState } = useRoomGameSocket(wsRoomId);
+  const { remoteState, gameEnded } = useRoomGameSocket(wsRoomId);
+  const [endGameLoading, setEndGameLoading] = useState(false);
   const [placedItems, setPlacedItems] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
 
@@ -63,8 +66,19 @@ export const RoomPage = () => {
     }
   }, [remoteState]);
 
+  const handleEndGame = async () => {
+    if (!wsRoomId || endGameLoading) return;
+    setEndGameLoading(true);
+    try {
+      await postEndGame(wsRoomId);
+    } finally {
+      setEndGameLoading(false);
+    }
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden">
+      {wsRoomId && <GameEndedOverlay roomId={wsRoomId} gameEnded={gameEnded} />}
       {roomCode && roomCode !== "—" && <RoomTimer roomId={roomCode} />}
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-14">
         <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
@@ -82,9 +96,10 @@ export const RoomPage = () => {
               <Button
                 size="lg"
                 className="h-11 min-w-[200px] bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
-                onClick={() => {}}
+                onClick={handleEndGame}
+                disabled={endGameLoading}
               >
-                Закончить игру
+                {endGameLoading ? "Завершение…" : "Закончить игру"}
               </Button>
               <div className="rounded-2xl border border-white/10 bg-slate-900/60 px-5 py-4">
                 <div className="text-xs text-white/60">Код комнаты</div>

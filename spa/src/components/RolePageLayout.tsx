@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { getRoomObjects } from "@/api";
 import { usePlayerData } from "@/store/player";
 import { useRoomId } from "@/store/room";
+import { GameEndedOverlay } from "./GameEndedOverlay";
 import { RadioWidget } from "./RadioWidget";
 import { RoomTimer } from "./RoomTimer";
 import { SimulationGate } from "./SimulationGate";
@@ -41,6 +42,7 @@ export function RolePageLayout({ children }: RolePageLayoutProps) {
 
   return (
     <>
+      {activeRoomId && <GameEndedOverlay roomId={activeRoomId} />}
       {activeRoomId && <RoomTimer roomId={activeRoomId} />}
       {activeRoomId && role ? (
         <SimulationGate roomId={activeRoomId} role={role}>
