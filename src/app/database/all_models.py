@@ -18,20 +18,7 @@ class RoleEnum(str, Enum):
     by1 = "БУ1"
     by2 = "БУ2"
 
-ROLES_NEX = {
-    "dispatcher": "Диспетчер",
-    "rtp":"РТП",
-    "headquarters": "Штаб",
-    "by1": "БУ1",
-    "by2": "БУ2"
-}
 
-# class RoleEnum(str, Enum):
-#     dispatcher = "dispatcher"
-#     rtp = "rtp"
-#     headquarters = "headquarters"
-#     by1 = "by1"
-#     by2 = "by2"
 
 
 class Room(DeclBase):
@@ -47,6 +34,10 @@ class Room(DeclBase):
                             cascade="all, delete-orphan")
     objects = relationship("RoomObjects", back_populates="room", uselist=False,
                            cascade="all, delete-orphan")
+    state = relationship("RoomState", back_populates="room", uselist=False,
+                         cascade="all, delete-orphan")
+    dispatcher_actions = relationship("DispatcherActions", back_populates="room",
+                                      cascade="all, delete-orphan")
 
 
 class Invite(DeclBase):
@@ -77,6 +68,8 @@ class User(DeclBase):
 
     invite = relationship("Invite", back_populates="user", uselist=False)
     user_refresh_tokens = relationship("UserIssuedJWTToken", cascade="all,delete", back_populates="user_tk")
+    dispatcher_actions = relationship("DispatcherActions", back_populates="dispatcher_user",
+                                      cascade="all, delete-orphan")
 
 
 class UserIssuedJWTToken(DeclBase):
@@ -160,6 +153,37 @@ class RoomObjects(DeclBase):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     room = relationship("Room", back_populates="objects")
+
+
+class RoomState(DeclBase):
+    __tablename__ = "room_states"
+
+    id = Column(String, primary_key=True, default=lambda: uuid.uuid4().hex)
+    room_id = Column(String, ForeignKey("rooms.id"), unique=True, nullable=False)
+    payload = Column(JSON, nullable=False)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    room = relationship("Room", back_populates="state")
+
+
+class DispatcherActions(DeclBase):
+    __tablename__ = "dispatcher_actions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    room_id = Column(String, ForeignKey("rooms.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    call_sign = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    date = Column(DateTime, nullable=False)
+
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow,
+                        onupdate=datetime.datetime.utcnow)
+
+    room = relationship("Room", back_populates="dispatcher_actions")
+    dispatcher_user = relationship("User", back_populates="dispatcher_actions")
+
+
 
 async def create_tables(engine: AsyncEngine):
     # DeclBase.metadata.create_all()

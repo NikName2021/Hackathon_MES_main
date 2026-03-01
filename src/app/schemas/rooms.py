@@ -30,6 +30,7 @@ class JoinResponse(BaseModel):
     user_id: int
     username: str
     role: str
+    room_id: str
     tokens: Token
     token_type: str = "bearer"
 

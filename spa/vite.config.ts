@@ -12,6 +12,12 @@ export default defineConfig({
   },
   server: {
     allowedHosts: ["localhost", "harmlessly-paned-marketta.ngrok-free.dev"],
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: "build",

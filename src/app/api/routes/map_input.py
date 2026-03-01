@@ -183,7 +183,7 @@ async def save_room_objects(
 @router.get("/{room_id}/objects", response_model=RoomObjectsOut)
 async def get_room_objects(
         room_id: str,
-        _: object = Depends(require_admin_or_any_user),
+        # _: object = Depends(require_admin_or_any_user),
         db: AsyncSession = Depends(async_get_db),
 ):
     """
