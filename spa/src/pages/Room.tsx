@@ -27,7 +27,7 @@ export const RoomPage = () => {
   const roomCode = paramRoomId ?? storedRoomId ?? "—";
   const wsRoomId = roomCode && roomCode !== "—" ? roomCode : null;
   const { remoteState } = useRoomGameSocket(wsRoomId);
-  const [placedItems, setPlacedItems] = useState([]);
+  const [placedItems, setPlacedItems] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
 
   async function copy(text: string, key: string) {
@@ -53,11 +53,13 @@ export const RoomPage = () => {
     if (remoteState.canvasBackground !== undefined) {
       setCanvasBackgroundUrl(remoteState.canvasBackground ?? null);
     }
-    if (
-      remoteState.canvasObjectsProvided &&
-      Array.isArray(remoteState.canvasObjects)
-    ) {
-      setCanvasObjects(remoteState.canvasObjects);
+    const canvasObjectsProvided = (
+      remoteState as { canvasObjectsProvided?: boolean }
+    ).canvasObjectsProvided;
+    const canvasObjects = (remoteState as { canvasObjects?: unknown })
+      .canvasObjects;
+    if (canvasObjectsProvided && Array.isArray(canvasObjects)) {
+      setCanvasObjects(canvasObjects as any);
     }
   }, [remoteState]);
 
@@ -100,7 +102,16 @@ export const RoomPage = () => {
 
         <section className="grid gap-4">
           <div className="mt-4">
-            <SchemeCanvas placedItems={placedItems} readOnly zoom={zoom} />
+            <SchemeCanvas
+              placedItems={placedItems}
+              onPlace={() => {}}
+              onMove={() => {}}
+              onRemove={() => {}}
+              onScaleChange={() => {}}
+              onRotationChange={() => {}}
+              readOnly
+              zoom={zoom}
+            />
           </div>
           {invites.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
