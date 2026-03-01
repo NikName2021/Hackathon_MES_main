@@ -240,7 +240,7 @@ async def create_room_params(
     # 3. Создаём параметры
     params = RoomParams(
         room_id=data.room_id,
-        time=datetime.now(),
+        time=data.time,
         wind=data.wind,
         temperature=data.temperature,
         serviceability_water=data.serviceability_water,
