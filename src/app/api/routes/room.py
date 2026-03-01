@@ -7,6 +7,7 @@ from fastapi import HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import flag_modified
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from core.config import async_get_db, BASE_URL, sessionmaker
@@ -85,10 +86,12 @@ async def get_room_status(
     # Запуск таймера комнаты при нажатии «Сохранить» — виден всем ролям
     state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
     state_row = state_result.scalar_one_or_none()
-    payload = dict(state_row.payload) if state_row and state_row.payload else {}
+    raw = state_row.payload if state_row and state_row.payload is not None else {}
+    payload = dict(raw) if isinstance(raw, dict) else {}
     payload["timer_started_at"] = datetime.datetime.utcnow().isoformat(timespec="milliseconds") + "Z"
     if state_row:
         state_row.payload = payload
+        flag_modified(state_row, "payload")
     else:
         db.add(RoomState(room_id=room.id, payload=payload))
 
@@ -166,7 +169,8 @@ async def post_dispatcher_dispatch(
     sent_at = datetime.datetime.utcnow().isoformat(timespec="milliseconds") + "Z"
     state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
     state_row = state_result.scalar_one_or_none()
-    payload = dict(state_row.payload) if state_row and state_row.payload else {}
+    raw = state_row.payload if state_row and state_row.payload is not None else {}
+    payload = dict(raw) if isinstance(raw, dict) else {}
     dispatches = list(payload.get("dispatcher_dispatches") or [])
     dispatches.append({
         "vehicleId": vehicle_id,
@@ -178,6 +182,7 @@ async def post_dispatcher_dispatch(
     payload["dispatcher_dispatches"] = dispatches
     if state_row:
         state_row.payload = payload
+        flag_modified(state_row, "payload")
     else:
         db.add(RoomState(room_id=room_id, payload=payload))
     await db.commit()
