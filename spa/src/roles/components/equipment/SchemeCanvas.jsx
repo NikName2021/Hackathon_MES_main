@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useCanvasBackgroundUrl, useCanvasObjects } from '../../../store/canvas'
+import FireSpreadLayer from './FireSpreadLayer'
 import './SchemeCanvas.css'
 
 /**
  * Область схемы, куда перетаскиваются элементы.
  * Отображает размещённые элементы с возможностью перетаскивания.
+ * Если передан roomId, поверх схемы рисуется слой распространения огня (синхронизирован между ролями).
  */
 function SchemeCanvas({
   placedItems,
@@ -15,6 +17,7 @@ function SchemeCanvas({
   onRotationChange,
   readOnly,
   zoom = 1,
+  roomId = null,
 }) {
   const [dragOver, setDragOver] = useState(false)
   const canvasObjects = useCanvasObjects()
@@ -235,6 +238,7 @@ function SchemeCanvas({
             {canvasObjects.map(renderCanvasObject)}
           </svg>
         )}
+        {roomId && <FireSpreadLayer roomId={roomId} zoom={zoom} />}
         {placedItems.map((item) => (
           <div
             key={item.id}

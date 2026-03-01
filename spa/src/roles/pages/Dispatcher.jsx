@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { DISPATCH_VEHICLES } from '../data/vehicleConfig'
 import { getRouteDuration } from '../api/geo2gis'
-import { getRoomParams, postDispatcherDispatch } from '@/api'
+import { postDispatcherDispatch, createDispatcherAction, getDispatcherActionsByRoom, getRoomParams } from '@/api'
 import { usePlayerData } from '@/store/player'
 import { useRoomId } from '@/store/room'
 import '../roles-theme.css'
@@ -30,8 +30,9 @@ function Dispatcher() {
   const [scenario, setScenario] = useState({
     wind: '',
     temperature: '',
-    timeOfDay: '',
-    waterSupply: 'ok',
+    time: '',
+    waterNearby: '',
+    address: '',
   })
 
   const [protocolRows, setProtocolRows] = useState([])
@@ -40,29 +41,21 @@ function Dispatcher() {
     action: '',
     time: '',
   })
+  const [protocolLoading, setProtocolLoading] = useState(false)
+  const [protocolSubmitting, setProtocolSubmitting] = useState(false)
+  const [protocolError, setProtocolError] = useState(null)
 
   const [dispatchQuantities, setDispatchQuantities] = useState({})
   const [dispatchEta, setDispatchEta] = useState({})
   const [dispatches, setDispatches] = useState([])
 
-  const [fireAddress, setFireAddress] = useState(
-    'Россия, Сириус, Олимпийский проспект, 15'
-  )
+  const [fireAddress, setFireAddress] = useState('')
   const [dispatchAddress] = useState('Россия, Сириус, Триумфальная ул., 24')
   const [calculatedMinutes, setCalculatedMinutes] = useState(null)
   const [fireCoords, setFireCoords] = useState(null)
   const [routeLoading, setRouteLoading] = useState(false)
   const [routeError, setRouteError] = useState(null)
   const [dispatchError, setDispatchError] = useState(null)
-
-  const mapTimeToDayPart = (timeValue) => {
-    if (!timeValue) return ''
-    const hour = Number(String(timeValue).split(':')[0])
-    if (Number.isNaN(hour)) return ''
-    if (hour >= 6 && hour < 18) return 'day'
-    if (hour >= 18 && hour < 22) return 'evening'
-    return 'night'
-  }
 
   useEffect(() => {
     if (!activeRoomId) return
@@ -79,19 +72,22 @@ function Dispatcher() {
           params?.temperature !== undefined && params?.temperature !== null
             ? `${params.temperature > 0 ? '+' : ''}${params.temperature} °C`
             : ''
-        const timeOfDayValue = mapTimeToDayPart(params?.time)
-        const waterValue =
+        const timeValue = params?.time ? String(params.time) : ''
+        const waterNearbyValue =
           typeof params?.serviceability_water === 'boolean'
             ? params.serviceability_water
-              ? 'ok'
-              : 'fail'
-            : params?.serviceability_water || 'ok'
+              ? 'Да'
+              : 'Нет'
+            : params?.serviceability_water ? 'Да' : 'Нет'
+        const addressValue = params?.address ? String(params.address) : ''
         setScenario({
           wind: windValue,
           temperature: temperatureValue,
-          timeOfDay: timeOfDayValue,
-          waterSupply: waterValue,
+          time: timeValue,
+          waterNearby: waterNearbyValue,
+          address: addressValue,
         })
+        if (addressValue) setFireAddress(addressValue)
       })
       .catch(() => {})
 
@@ -108,10 +104,56 @@ function Dispatcher() {
     setProtocolForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleAddProtocolRow = () => {
+  const fetchProtocol = useCallback(async () => {
+    if (!roomId) return
+    setProtocolLoading(true)
+    setProtocolError(null)
+    try {
+      const actions = await getDispatcherActionsByRoom(roomId)
+      setProtocolRows(actions)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Ошибка загрузки протокола'
+      setProtocolError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+      setProtocolRows([])
+    } finally {
+      setProtocolLoading(false)
+    }
+  }, [roomId])
+
+  useEffect(() => {
+    fetchProtocol()
+  }, [fetchProtocol])
+
+  const handleAddProtocolRow = async () => {
     if (!protocolForm.callsign || !protocolForm.action || !protocolForm.time) return
-    setProtocolRows((prev) => [...prev, { ...protocolForm, id: prev.length + 1 }])
-    setProtocolForm({ callsign: '', action: '', time: '' })
+    if (!roomId) {
+      setProtocolError('Не найден идентификатор комнаты. Войдите по ссылке приглашения.')
+      return
+    }
+    const user_id = playerData?.user_id
+    if (user_id == null) {
+      setProtocolError('Не найден идентификатор пользователя.')
+      return
+    }
+    setProtocolError(null)
+    setProtocolSubmitting(true)
+    const dateStr = `${new Date().toISOString().slice(0, 10)}T${protocolForm.time}:00`
+    try {
+      await createDispatcherAction({
+        room_id: roomId,
+        user_id,
+        call_sign: protocolForm.callsign,
+        action: protocolForm.action,
+        date: dateStr,
+      })
+      setProtocolForm({ callsign: '', action: '', time: '' })
+      await fetchProtocol()
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Ошибка при добавлении записи'
+      setProtocolError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    } finally {
+      setProtocolSubmitting(false)
+    }
   }
 
   const handleDispatchQtyChange = (vehicleId, value) => {
@@ -245,31 +287,31 @@ function Dispatcher() {
                 />
               </label>
               <label className="form-field">
-                <span>Время суток</span>
-                <select
-                  value={scenario.timeOfDay}
-                  onChange={(e) => handleScenarioChange('timeOfDay', e.target.value)}
-                  disabled
-                >
-                  <option value="">Не выбрано</option>
-                  <option value="day">День</option>
-                  <option value="evening">Вечер</option>
-                  <option value="night">Ночь</option>
-                </select>
+                <span>Время</span>
+                <input
+                  type="text"
+                  value={scenario.time}
+                  readOnly
+                  placeholder="ЧЧ:ММ из настройки условий"
+                />
               </label>
               <label className="form-field">
-                <span>Состояние систем ПВ</span>
-                <select
-                  value={scenario.waterSupply}
-                  onChange={(e) =>
-                    handleScenarioChange('waterSupply', e.target.value)
-                  }
-                  disabled
-                >
-                  <option value="ok">Исправны</option>
-                  <option value="partial">Частично неисправны</option>
-                  <option value="fail">Неисправны</option>
-                </select>
+                <span>Рядом есть вода</span>
+                <input
+                  type="text"
+                  value={scenario.waterNearby}
+                  readOnly
+                  placeholder="Да / Нет из настройки условий"
+                />
+              </label>
+              <label className="form-field">
+                <span>Адрес</span>
+                <input
+                  type="text"
+                  value={scenario.address}
+                  readOnly
+                  placeholder="Адрес из настройки условий"
+                />
               </label>
             </div>
           </section>
@@ -284,7 +326,7 @@ function Dispatcher() {
                 Схема расстановки сил и средств, формируемая руководителем учебного занятия
                 и передаваемая с бэкенда.
               </p>
-              <SchemeCanvas placedItems={[]} readOnly zoom={1} />
+              <SchemeCanvas placedItems={[]} readOnly zoom={1} roomId={roomId} />
             </div>
 
             <section className="panel panel-dispatch">
@@ -307,6 +349,7 @@ function Dispatcher() {
                     value={fireAddress}
                     onChange={(e) => setFireAddress(e.target.value)}
                     placeholder="Россия, Сириус, Олимпийский проспект, 15"
+                    title="Подставляется из параметров комнаты (адрес)"
                   />
                 </label>
                 <label className="form-field dispatch-address-readonly">
@@ -426,6 +469,11 @@ function Dispatcher() {
           <div className="dispatcher-bottom">
             <section className="panel panel-protocol">
               <h3>Протокол действий диспетчера</h3>
+              {protocolError && (
+                <p className="dispatch-route-error" role="alert">
+                  {protocolError}
+                </p>
+              )}
               <div className="protocol-form">
                 <input
                   type="text"
@@ -444,8 +492,13 @@ function Dispatcher() {
                   value={protocolForm.time}
                   onChange={(e) => handleProtocolChange('time', e.target.value)}
                 />
-                <button type="button" className="btn btn-primary" onClick={handleAddProtocolRow}>
-                  Добавить
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleAddProtocolRow}
+                  disabled={protocolLoading || protocolSubmitting}
+                >
+                  {protocolSubmitting ? 'Добавление…' : 'Добавить'}
                 </button>
               </div>
               <div className="protocol-table-wrapper">
@@ -458,7 +511,13 @@ function Dispatcher() {
                     </tr>
                   </thead>
                   <tbody>
-                    {protocolRows.length === 0 ? (
+                    {protocolLoading && protocolRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="empty-state">
+                          Загрузка…
+                        </td>
+                      </tr>
+                    ) : protocolRows.length === 0 ? (
                       <tr>
                         <td colSpan={3} className="empty-state">
                           Записей пока нет
@@ -467,9 +526,16 @@ function Dispatcher() {
                     ) : (
                       protocolRows.map((row) => (
                         <tr key={row.id}>
-                          <td>{row.callsign}</td>
+                          <td>{row.call_sign}</td>
                           <td>{row.action}</td>
-                          <td>{row.time}</td>
+                          <td>
+                            {row.date
+                              ? new Date(row.date).toLocaleTimeString('ru-RU', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
+                          </td>
                         </tr>
                       ))
                     )}

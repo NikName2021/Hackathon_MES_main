@@ -131,7 +131,7 @@ function CombatSection2() {
               <button type="button" onClick={handleZoomUp}>+</button>
               {roomId && <span className="text-xs opacity-70 ml-2">{isConnected ? '🟢 сцена синхронизируется' : '🔴 нет связи'}</span>}
             </div>
-            <SchemeCanvas placedItems={placedItems} onPlace={handlePlace} onMove={handleMove} onRemove={handleRemove} onScaleChange={handleScaleChange} onRotationChange={handleRotationChange} readOnly={false} zoom={zoom} />
+            <SchemeCanvas placedItems={placedItems} onPlace={handlePlace} onMove={handleMove} onRemove={handleRemove} onScaleChange={handleScaleChange} onRotationChange={handleRotationChange} readOnly={false} zoom={zoom} roomId={roomId} />
           </section>
         </div>
       </div>

@@ -4,4 +4,5 @@ export type RoomParamsResponse = {
   wind: number;
   temperature: number;
   time: string;
+  address?: string | null;
 };

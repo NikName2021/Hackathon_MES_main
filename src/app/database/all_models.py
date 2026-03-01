@@ -3,7 +3,7 @@ import uuid
 from enum import Enum
 
 from sqlalchemy import (
-    Column, String, DateTime, ForeignKey, Boolean, Enum as SAEnum, Integer, Float, JSON
+    Column, String, DateTime, ForeignKey, Boolean, Enum as SAEnum, Integer, Float, JSON, text,
 )
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import declarative_base, relationship
@@ -113,7 +113,8 @@ class RoomParams(DeclBase):
     id = Column(String, primary_key=True, default=lambda: uuid.uuid4().hex)
     room_id = Column(String, ForeignKey("rooms.id"), unique=True, nullable=False)
 
-    time = Column(String, nullable=False)
+    time = Column(DateTime, nullable=False)
+    address = Column(String, nullable=True)
     wind = Column(Float, nullable=False)
     temperature = Column(Float, nullable=False)
     serviceability_water = Column(Boolean, nullable=False)
@@ -189,3 +190,14 @@ async def create_tables(engine: AsyncEngine):
     # DeclBase.metadata.create_all()
     async with engine.begin() as conn:
         await conn.run_sync(DeclBase.metadata.create_all)
+    # Добавляем колонки, которых может не быть в уже существующих БД (миграции без Alembic)
+    await _run_pending_migrations(engine)
+
+
+async def _run_pending_migrations(engine: AsyncEngine) -> None:
+    """Добавляем недостающие колонки в существующие таблицы."""
+    async with engine.begin() as conn:
+        # room_params.address — добавлено для адреса в настройках комнаты
+        await conn.execute(
+            text("ALTER TABLE room_params ADD COLUMN IF NOT EXISTS address VARCHAR NULL")
+        )

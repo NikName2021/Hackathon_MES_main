@@ -177,7 +177,7 @@ function Headquarters() {
               <button type="button" onClick={handleZoomUp}>+</button>
               {roomId && <span className="text-xs opacity-70 ml-2">{isConnected ? '🟢 сцена синхронизируется' : '🔴 нет связи'}</span>}
             </div>
-            <SchemeCanvas placedItems={placedItems} onPlace={handlePlace} onMove={handleMove} onRemove={handleRemove} onScaleChange={handleScaleChange} onRotationChange={handleRotationChange} readOnly={sectionsLocked} zoom={zoom} />
+            <SchemeCanvas placedItems={placedItems} onPlace={handlePlace} onMove={handleMove} onRemove={handleRemove} onScaleChange={handleScaleChange} onRotationChange={handleRotationChange} readOnly={sectionsLocked} zoom={zoom} roomId={roomId} />
             {sectionsLocked && <p className="scheme-lock-hint">Добавлено два боевых участка. Схема заблокирована для редактирования.</p>}
           </section>
         </div>

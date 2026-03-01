@@ -55,3 +55,5 @@ passlib==1.7.4
 python-multipart
 bcrypt
 uvicorn[standard]
+shapely>=2.0.0
+numpy>=1.24.0

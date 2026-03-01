@@ -99,7 +99,7 @@ export async function getInviteRoom(inviteToken: string, username: string) {
     setRoomId(data.room_id);
     setPlayerData(data, inviteToken);
     const accessToken =
-      data.tokens?.access_token ?? 
+      data.tokens?.access_token ??
       (data as unknown as { access_token?: { access_token?: string } }).access_token?.access_token;
     if (accessToken) {
       setToken(accessToken);
@@ -125,6 +125,7 @@ export async function registerParams(
   wind: number,
   temperature: number,
   time: string,
+  address?: string,
 ) {
   try {
     await apiAuth.post("room_params/room-params", {
@@ -133,6 +134,7 @@ export async function registerParams(
       wind,
       temperature,
       time,
+      address: address ?? "",
     });
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -287,6 +289,30 @@ export async function getRoomTimer(room_id: string): Promise<RoomTimerResponse> 
   return data;
 }
 
+/** Состояние распространения огня в момент времени time (секунды с начала симуляции) */
+export interface RoomFireStateResponse {
+  time: number;
+  max_time: number;
+  building: GeoJSONPolygon | null;
+  fire: GeoJSONPolygon | null;
+  bbox: [number, number, number, number] | null;
+}
+
+interface GeoJSONPolygon {
+  type: string;
+  coordinates: number[][][] | number[][][][];
+}
+
+export async function getRoomFireState(
+  room_id: string,
+  time: number
+): Promise<RoomFireStateResponse> {
+  const { data } = await api.get<RoomFireStateResponse>(`room/${room_id}/fire`, {
+    params: { time: Math.max(0, time) },
+  });
+  return data;
+}
+
 /** Состояние симуляции: таймер и высылка техники диспетчером */
 export interface DispatcherDispatchItem {
   vehicleId: string;
@@ -346,3 +372,45 @@ export async function postDispatcherDispatch(
   );
   return data;
 }
+
+/** Протокол действий диспетчера */
+export interface DispatcherActionItem {
+  id: number;
+  room_id: string;
+  user_id: number;
+  call_sign: string;
+  action: string;
+  date: string;
+  updated_at?: string;
+}
+
+export async function createDispatcherAction(payload: {
+  room_id: string;
+  user_id: number;
+  call_sign: string;
+  action: string;
+  date: string;
+}): Promise<DispatcherActionItem> {
+  const { data } = await apiAuth.post<DispatcherActionItem>(
+    "dispatcher-actions/",
+    payload
+  );
+  return data;
+}
+
+export async function getDispatcherActionsByRoom(
+  room_id: string
+): Promise<DispatcherActionItem[]> {
+  try {
+    const { data } = await apiAuth.get<DispatcherActionItem[]>(
+      `dispatcher-actions/room/${room_id}`
+    );
+    return data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 404) {
+      return [];
+    }
+    throw err;
+  }
+}
+

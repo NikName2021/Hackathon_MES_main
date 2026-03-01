@@ -52,7 +52,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 }
             )
 
-            if response:
+            if response is not None:
                 response.headers["X-Request-ID"] = request_id
-
-            return response
+                return response

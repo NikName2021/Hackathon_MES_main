@@ -23,6 +23,7 @@ services:
     environment:
       PYTHONUNBUFFERED: 1
       PYTHONDONTWRITEBYTECODE: 1
+      FIRE_MODEL_URL: http://fire-model:7000
     volumes:
       - ${PROJECT_VOLUME_SRC}:/app:cached
     command: python3 main.py
@@ -61,6 +62,16 @@ services:
       - "80:80"
     depends_on:
       - backend
+    networks:
+      - hackathon_MES_net
+
+  fire-model:
+    build:
+      context: model
+    container_name: hackathon_mes_fire_model
+    ports:
+      - "7001:7000"
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7000"]
     networks:
       - hackathon_MES_net
 

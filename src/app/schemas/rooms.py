@@ -45,6 +45,7 @@ class CreateParamsMap(BaseModel):
     """Входные данные от админа."""
     room_id: str
     time: str
+    address: str | None = None
     wind: float = Field(..., ge=0, description="Скорость ветра (м/с)")
     temperature: float = Field(..., description="Температура (°C)")
     serviceability_water: bool = Field(..., description="Исправность водоснабжения")
@@ -66,6 +67,7 @@ class ParamsMapOut(BaseModel):
     id: str
     room_id: str
     time: str
+    address: str | None = None
     wind: float
     temperature: float
     serviceability_water: bool
@@ -78,6 +80,7 @@ class ParamsMapOut(BaseModel):
 class UpdateParamsMap(BaseModel):
     """Частичное обновление параметров."""
     time: str | None = None
+    address: str | None = None
     wind: float | None = Field(None, ge=0)
     temperature: float | None = None
     serviceability_water: bool | None = None
