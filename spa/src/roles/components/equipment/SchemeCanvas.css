@@ -1,6 +1,6 @@
 .scheme-canvas {
   flex: 1;
-  min-height: 300px;
+  min-height: 520px;
   background: #f9fafb;
   border: 1px dashed #d1d5db;
   border-radius: 6px;
@@ -49,7 +49,6 @@
   justify-content: center;
 }
 
-/* Расширенная зона наведения, чтобы кнопки не пропадали при движении к ним */
 .scheme-item::before {
   content: '';
   position: absolute;
@@ -72,7 +71,6 @@
   object-fit: contain;
 }
 
-/* Кнопки: крупнее, расположены снаружи картинки (не налегают) */
 .scheme-item-btn {
   position: absolute;
   width: 26px;
@@ -94,7 +92,6 @@
   pointer-events: auto;
 }
 
-/* Удаление: снаружи верхнего правого угла */
 .scheme-item-remove {
   top: -20px;
   right: -20px;
@@ -132,7 +129,6 @@
   border-color: #93c5fd;
 }
 
-/* Масштаб: снаружи нижнего правого угла */
 .scheme-item-resize-handle {
   bottom: -20px;
   right: -20px;

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { DISPATCH_VEHICLES } from '../data/vehicleConfig'
 import { getRouteDuration } from '../api/geo2gis'
 import '../roles-theme.css'
@@ -210,11 +211,7 @@ function Dispatcher() {
                 Схема расстановки сил и средств, формируемая руководителем учебного занятия
                 и передаваемая с бэкенда.
               </p>
-              <div className="scheme-canvas">
-                <div className="scheme-placeholder">
-                  Схема будет загружена с сервера в соответствии со сценарием занятия.
-                </div>
-              </div>
+              <SchemeCanvas placedItems={[]} readOnly zoom={1} />
             </div>
 
             <section className="panel panel-dispatch">
