@@ -4,6 +4,7 @@ import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { usePlayerData } from '@/store/player'
 import { useRoomGameSocket } from '@/hooks/useRoomGameSocket'
 import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from '@/store/canvas'
+import { getSimulationState, postRtpCreateHeadquarters } from '@/api'
 import '../roles-theme.css'
 import './RTP.css'
 
@@ -18,6 +19,13 @@ function RTP() {
   const [zoom, setZoom] = useState(1)
   zoomRef.current = zoom
   const [headquartersCreated, setHeadquartersCreated] = useState(false)
+
+  useEffect(() => {
+    if (!roomId) return
+    getSimulationState(roomId).then((s) => {
+      if (s.headquarters_created) setHeadquartersCreated(true)
+    }).catch(() => {})
+  }, [roomId])
 
   // Применить состояние сцены, пришедшее по сокету (другие игроки или восстановление из БД)
   useEffect(() => {
@@ -111,7 +119,15 @@ function RTP() {
               <button
                 type="button"
                 className="btn btn-primary btn-create-hq"
-                onClick={() => setHeadquartersCreated(true)}
+                onClick={async () => {
+                  if (headquartersCreated) return
+                  if (roomId) {
+                    try {
+                      await postRtpCreateHeadquarters(roomId)
+                    } catch (_) {}
+                  }
+                  setHeadquartersCreated(true)
+                }}
               >
                 Создание штаба
               </button>

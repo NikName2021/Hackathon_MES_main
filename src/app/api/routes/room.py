@@ -136,15 +136,77 @@ async def get_simulation_state(
         raise HTTPException(status_code=404, detail="Комната не найдена")
     state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
     state_row = state_result.scalar_one_or_none()
-    payload = dict(state_row.payload) if state_row and state_row.payload else {}
+    raw = state_row.payload if state_row and state_row.payload is not None else {}
+    payload = dict(raw) if isinstance(raw, dict) else {}
     dispatches = payload.get("dispatcher_dispatches")
     if not isinstance(dispatches, list):
         dispatches = []
+    headquarters_created = bool(payload.get("headquarters_created"))
+    combat_sections_added = int(payload.get("combat_sections_added", 0))
+    if combat_sections_added < 0:
+        combat_sections_added = 0
+    if combat_sections_added > 2:
+        combat_sections_added = 2
     return {
         "room_id": room_id,
         "timer_started_at": payload.get("timer_started_at"),
         "dispatcher_dispatches": dispatches,
+        "headquarters_created": headquarters_created,
+        "combat_sections_added": combat_sections_added,
     }
+
+
+@router.post("/{room_id}/rtp-create-headquarters")
+async def post_rtp_create_headquarters(
+        room_id: str,
+        db: AsyncSession = Depends(async_get_db),
+):
+    """РТП нажал «Создание штаба» — разблокируем интерфейс Штаба."""
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    raw = state_row.payload if state_row and state_row.payload is not None else {}
+    payload = dict(raw) if isinstance(raw, dict) else {}
+    payload["headquarters_created"] = True
+    if state_row:
+        state_row.payload = payload
+        flag_modified(state_row, "payload")
+    else:
+        db.add(RoomState(room_id=room_id, payload=payload))
+    await db.commit()
+    return {"ok": True, "headquarters_created": True}
+
+
+@router.post("/{room_id}/headquarters-add-combat-section")
+async def post_headquarters_add_combat_section(
+        room_id: str,
+        db: AsyncSession = Depends(async_get_db),
+):
+    """Штаб нажал «Добавить боевые участки» — первый раз разблокируем БУ1, второй раз БУ2."""
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    raw = state_row.payload if state_row and state_row.payload is not None else {}
+    payload = dict(raw) if isinstance(raw, dict) else {}
+    current = int(payload.get("combat_sections_added", 0))
+    if current < 0:
+        current = 0
+    if current >= 2:
+        return {"ok": True, "combat_sections_added": 2}
+    payload["combat_sections_added"] = current + 1
+    if state_row:
+        state_row.payload = payload
+        flag_modified(state_row, "payload")
+    else:
+        db.add(RoomState(room_id=room_id, payload=payload))
+    await db.commit()
+    return {"ok": True, "combat_sections_added": current + 1}
 
 
 @router.post("/{room_id}/dispatcher-dispatch")

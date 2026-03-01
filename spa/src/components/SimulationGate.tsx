@@ -4,6 +4,9 @@ import type { SimulationStateResponse } from "@/api";
 
 const ROLE_DISPATCHER = "Диспетчер";
 const ROLE_RTP = "РТП";
+const ROLE_HEADQUARTERS = "штаб";
+const ROLE_BY1 = "БУ1";
+const ROLE_BY2 = "БУ2";
 
 const POLL_MS = 3000;
 
@@ -132,6 +135,48 @@ export function SimulationGate({ roomId, role, children }: SimulationGateProps) 
         </p>
         <p className="mt-2 text-sm text-white/70">
           Ожидание прибытия техники. Действия заблокированы.
+        </p>
+      </div>
+    );
+  }
+
+  const headquartersCreated = Boolean(state.headquarters_created);
+  const combatSectionsAdded = Number(state.combat_sections_added) || 0;
+
+  if (role === ROLE_HEADQUARTERS && !headquartersCreated) {
+    return (
+      <div className="relative z-10 flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-900/60 p-8 text-center backdrop-blur">
+        <p className="text-xl font-medium text-white">
+          Ожидаем добавления в группы от РТП
+        </p>
+        <p className="mt-2 text-sm text-white/70">
+          Действия заблокированы до нажатия РТП кнопки «Создание штаба».
+        </p>
+      </div>
+    );
+  }
+
+  if (role === ROLE_BY1 && combatSectionsAdded < 1) {
+    return (
+      <div className="relative z-10 flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-900/60 p-8 text-center backdrop-blur">
+        <p className="text-xl font-medium text-white">
+          Ожидаем добавления в группу от Штаба
+        </p>
+        <p className="mt-2 text-sm text-white/70">
+          Действия заблокированы до добавления Штабом первого боевого участка.
+        </p>
+      </div>
+    );
+  }
+
+  if (role === ROLE_BY2 && combatSectionsAdded < 2) {
+    return (
+      <div className="relative z-10 flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-900/60 p-8 text-center backdrop-blur">
+        <p className="text-xl font-medium text-white">
+          Ожидаем добавления в группу от Штаба
+        </p>
+        <p className="mt-2 text-sm text-white/70">
+          Действия заблокированы до добавления Штабом второго боевого участка.
         </p>
       </div>
     );

@@ -273,6 +273,8 @@ export interface SimulationStateResponse {
   room_id: string;
   timer_started_at: string | null;
   dispatcher_dispatches: DispatcherDispatchItem[];
+  headquarters_created?: boolean;
+  combat_sections_added?: number;
 }
 
 export async function getSimulationState(
@@ -280,6 +282,24 @@ export async function getSimulationState(
 ): Promise<SimulationStateResponse> {
   const { data } = await api.get<SimulationStateResponse>(
     `room/${room_id}/simulation-state`
+  );
+  return data;
+}
+
+export async function postRtpCreateHeadquarters(
+  room_id: string
+): Promise<{ ok: boolean; headquarters_created: boolean }> {
+  const { data } = await api.post<{ ok: boolean; headquarters_created: boolean }>(
+    `room/${room_id}/rtp-create-headquarters`
+  );
+  return data;
+}
+
+export async function postHeadquartersAddCombatSection(
+  room_id: string
+): Promise<{ ok: boolean; combat_sections_added: number }> {
+  const { data } = await api.post<{ ok: boolean; combat_sections_added: number }>(
+    `room/${room_id}/headquarters-add-combat-section`
   );
   return data;
 }

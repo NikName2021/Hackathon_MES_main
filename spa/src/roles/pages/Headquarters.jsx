@@ -4,6 +4,7 @@ import SchemeCanvas from '../components/equipment/SchemeCanvas'
 import { usePlayerData } from '@/store/player'
 import { useRoomGameSocket } from '@/hooks/useRoomGameSocket'
 import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from '@/store/canvas'
+import { getSimulationState, postHeadquartersAddCombatSection } from '@/api'
 import '../roles-theme.css'
 import './RTP.css'
 
@@ -19,6 +20,14 @@ function Headquarters() {
   const [zoom, setZoom] = useState(1)
   const [combatSectionsCount, setCombatSectionsCount] = useState(0)
   const sectionsLocked = combatSectionsCount >= MAX_COMBAT_SECTIONS
+
+  useEffect(() => {
+    if (!roomId) return
+    getSimulationState(roomId).then((s) => {
+      const n = Number(s.combat_sections_added)
+      if (n >= 0 && n <= MAX_COMBAT_SECTIONS) setCombatSectionsCount(n)
+    }).catch(() => {})
+  }, [roomId])
 
   useEffect(() => {
     if (!remoteState) return
@@ -107,7 +116,18 @@ function Headquarters() {
               <button
                 type="button"
                 className="btn btn-primary btn-create-hq"
-                onClick={() => setCombatSectionsCount((c) => Math.min(c + 1, MAX_COMBAT_SECTIONS))}
+                onClick={async () => {
+                  if (sectionsLocked) return
+                  if (roomId) {
+                    try {
+                      const res = await postHeadquartersAddCombatSection(roomId)
+                      const n = Number(res.combat_sections_added)
+                      if (n >= 0 && n <= MAX_COMBAT_SECTIONS) setCombatSectionsCount(n)
+                      return
+                    } catch (_) {}
+                  }
+                  setCombatSectionsCount((c) => Math.min(c + 1, MAX_COMBAT_SECTIONS))
+                }}
                 disabled={sectionsLocked}
               >
                 Добавить боевые участки
