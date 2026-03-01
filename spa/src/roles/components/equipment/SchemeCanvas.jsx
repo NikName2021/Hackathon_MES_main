@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useCanvasBackgroundUrl, useCanvasObjects } from '../../../store/canvas'
 import FireSpreadLayer from './FireSpreadLayer'
 import './SchemeCanvas.css'
@@ -20,6 +20,8 @@ function SchemeCanvas({
   roomId = null,
 }) {
   const [dragOver, setDragOver] = useState(false)
+  const draggingIdRef = useRef(null)
+  const canvasContainerRef = useRef(null)
   const canvasObjects = useCanvasObjects()
   const canvasBackground = useCanvasBackgroundUrl()
   const hasCanvasObjects = canvasObjects && canvasObjects.length > 0
@@ -102,26 +104,41 @@ function SchemeCanvas({
     setDragOver(false)
   }
 
+  const getCanvasCoords = (clientX, clientY) => {
+    const el = canvasContainerRef.current || (typeof document !== 'undefined' && document.querySelector('.scheme-canvas-inner'))
+    if (!el) return null
+    const rect = el.getBoundingClientRect()
+    return { x: clientX - rect.left, y: clientY - rect.top }
+  }
+
   const handleDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
     if (readOnly) return
 
-    const dataStr = e.dataTransfer.getData('application/json')
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX
+    const clientY = e.clientY ?? e.changedTouches?.[0]?.clientY ?? e.touches?.[0]?.clientY
+    const dropTarget = e.currentTarget
+    const inner = dropTarget?.querySelector?.('.scheme-canvas-inner') || dropTarget
+    const rect = inner.getBoundingClientRect()
+    const coords = { x: clientX - rect.left, y: clientY - rect.top }
+
+    const moveId = draggingIdRef.current
+    if (moveId != null) {
+      draggingIdRef.current = null
+      onMove?.(moveId, coords.x, coords.y)
+      return
+    }
+
+    const dataStr = e.dataTransfer?.getData?.('application/json') || e.dataTransfer?.getData?.('text/plain')
     if (!dataStr) return
 
     try {
       const data = JSON.parse(dataStr)
       if (data.source === 'palette') {
-        const rect = e.currentTarget.getBoundingClientRect()
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
-        onPlace(data.item, x, y)
+        onPlace(data.item, coords.x, coords.y)
       } else if (data.source === 'canvas' && data.id !== undefined) {
-        const rect = e.currentTarget.getBoundingClientRect()
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
-        onMove(data.id, x, y)
+        onMove(data.id, coords.x, coords.y)
       }
     } catch (err) {
       console.warn('Drop parse error', err)
@@ -133,8 +150,29 @@ function SchemeCanvas({
       e.preventDefault()
       return
     }
-    e.dataTransfer.setData('application/json', JSON.stringify({ source: 'canvas', id }))
-    e.dataTransfer.effectAllowed = 'move'
+    draggingIdRef.current = id
+    try {
+      e.dataTransfer?.setData?.('application/json', JSON.stringify({ source: 'canvas', id }))
+      e.dataTransfer?.setData?.('text/plain', JSON.stringify({ source: 'canvas', id }))
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+    } catch (_) {}
+  }
+
+  const handleItemTouchStart = (e, item) => {
+    if (readOnly) return
+    if (e.target.closest('.scheme-item-btn')) return
+    draggingIdRef.current = item.id
+
+    const onTouchEnd = (endEv) => {
+      const t = endEv.changedTouches?.[0]
+      if (t) {
+        const coords = getCanvasCoords(t.clientX, t.clientY)
+        if (coords) onMove?.(item.id, coords.x, coords.y)
+      }
+      draggingIdRef.current = null
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+    window.addEventListener('touchend', onTouchEnd, { once: true })
   }
 
   const handleResizeMouseDown = (e, item) => {
@@ -218,6 +256,7 @@ function SchemeCanvas({
       onDrop={handleDrop}
     >
       <div
+        ref={canvasContainerRef}
         className="scheme-canvas-inner"
         style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
       >
@@ -250,6 +289,8 @@ function SchemeCanvas({
             }}
             draggable={!readOnly}
             onDragStart={(ev) => handleItemDragStart(ev, item.id)}
+            onDragEnd={() => { draggingIdRef.current = null }}
+            onTouchStart={(ev) => handleItemTouchStart(ev, item)}
           >
             <div className="scheme-item-visual">
               <img

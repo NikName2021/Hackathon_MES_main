@@ -49,6 +49,7 @@
   align-items: center;
   justify-content: center;
   z-index: 10;
+  touch-action: none; /* даёт перетаскивание на тач-устройствах и в строгих режимах */
 }
 
 .scheme-item::before {
