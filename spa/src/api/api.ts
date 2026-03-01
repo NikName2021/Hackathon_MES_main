@@ -7,6 +7,7 @@ import { setPlayerData } from "@/store/player";
 import type { RoomData, roomId } from "@/types/room.types";
 import type { InviteRoomResponse } from "@/types/invite.types";
 import type { CanvasObject } from "@/types/canvas.types";
+import type { RoomParamsResponse } from "@/types/room-params.types";
 
 const API_URL = (import.meta.env.VITE_API_URL as string)?.trim() || "";
 
@@ -95,6 +96,7 @@ export async function getInviteRoom(inviteToken: string, username: string) {
     const { data } = await api.get<InviteRoomResponse>("invite/room", {
       params: { invite_token: inviteToken, username },
     });
+    setRoomId(data.room_id);
     setPlayerData(data, inviteToken);
     const accessToken =
       data.tokens?.access_token ?? 
@@ -243,6 +245,24 @@ export interface RoomStateResponse {
   state: { timer_started_at?: string };
 }
 
+export async function getRoomParams(room_id: string) {
+  try {
+    const { data } = await api.get<RoomParamsResponse>(
+      `room_params/room-params/${room_id}`
+    );
+    return data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const payload = error.response?.data as
+        | { detail?: string }
+        | string
+        | undefined;
+      const message = typeof payload === "string" ? payload : payload?.detail;
+      throw new Error(message);
+    }
+    throw new Error("неизвестная ошибка");
+  }
+}
 export async function getRoomState(room_id: string): Promise<RoomStateResponse> {
   const { data } = await apiAuth.get<RoomStateResponse>(`room/${room_id}/state`);
   return data;
