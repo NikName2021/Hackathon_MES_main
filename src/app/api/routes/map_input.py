@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 
 from fastapi import HTTPException, Depends
@@ -21,6 +21,27 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".svg"}
 MAX_FILE_SIZE = 7 * 1024 * 1024
 
 router = APIRouter(prefix="/room_params", tags=["Параметры комнаты"])
+
+
+def _parse_time_to_datetime(value: str):
+    """Преобразует строку 'HH:MM' или 'HH:MM:SS' в datetime (дата 2000-01-01)."""
+    value = (value or "").strip()
+    for fmt in ("%H:%M:%S", "%H:%M"):
+        try:
+            t = datetime.strptime(value, fmt).time()
+            return datetime.combine(date(2000, 1, 1), t)
+        except ValueError:
+            continue
+    raise ValueError(f"Недопустимый формат времени: {value!r}")
+
+
+def _format_time_from_datetime(value):
+    """Форматирует datetime или time в строку HH:MM для ответа API."""
+    if value is None:
+        return ""
+    if hasattr(value, "strftime"):
+        return value.strftime("%H:%M")
+    return str(value)
 
 
 @router.post("/{room_id}/map")
@@ -237,10 +258,11 @@ async def create_room_params(
                    "Используйте PATCH для обновления."
         )
 
-    # 3. Создаём параметры
+    # 3. Создаём параметры (time в БД — timestamp, с фронта приходит строка "HH:MM")
+    time_dt = _parse_time_to_datetime(data.time)
     params = RoomParams(
         room_id=data.room_id,
-        time=data.time,
+        time=time_dt,
         wind=data.wind,
         temperature=data.temperature,
         serviceability_water=data.serviceability_water,
@@ -268,8 +290,16 @@ async def get_room_params(
     if not params:
         raise HTTPException(status_code=404, detail="Параметры не найдены")
 
-    return params
-
+    return ParamsMapOut(
+        id=params.id,
+        room_id=params.room_id,
+        time=_format_time_from_datetime(params.time),
+        wind=params.wind,
+        temperature=params.temperature,
+        serviceability_water=params.serviceability_water,
+        created_at=params.created_at,
+        updated_at=params.updated_at,
+    )
 
 
 @router.patch("/room-params/{room_id}", response_model=ParamsMapOut)
@@ -289,12 +319,23 @@ async def update_room_params(
     if not params:
         raise HTTPException(status_code=404, detail="Параметры не найдены")
 
-    # Обновляем только переданные поля
+    # Обновляем только переданные поля (time — строка "HH:MM" -> datetime)
     update_data = data.model_dump(exclude_unset=True)
+    if "time" in update_data:
+        update_data["time"] = _parse_time_to_datetime(update_data["time"])
     for field, value in update_data.items():
         setattr(params, field, value)
 
     await db.commit()
     await db.refresh(params)
 
-    return params
+    return ParamsMapOut(
+        id=params.id,
+        room_id=params.room_id,
+        time=_format_time_from_datetime(params.time),
+        wind=params.wind,
+        temperature=params.temperature,
+        serviceability_water=params.serviceability_water,
+        created_at=params.created_at,
+        updated_at=params.updated_at,
+    )

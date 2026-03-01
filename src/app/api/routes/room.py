@@ -359,6 +359,11 @@ async def admin_room_websocket(
         manager.disconnect_admin(websocket, room_id)
 
 
+# Ключи, которые приходят из scene_update (канвас). Остальные ключи в payload (таймер,
+# высылка, штаб, боевые участки) не перезаписываем, иначе синхронизация сцены затирает симуляцию.
+SCENE_PAYLOAD_KEYS = ("placedItems", "zoom", "canvasBackground", "canvasObjects")
+
+
 # ──────────────────────────────────────
 #  WebSocket для игроков: синхронизация сцены
 # ──────────────────────────────────────
@@ -417,11 +422,16 @@ async def game_room_websocket(
                 async with sessionmaker() as session:
                     st = await session.execute(select(RoomState).where(RoomState.room_id == room_id))
                     row = st.scalar_one_or_none()
+                    raw = row.payload if row and row.payload is not None else {}
+                    payload = dict(raw) if isinstance(raw, dict) else {}
+                    for key in SCENE_PAYLOAD_KEYS:
+                        if key in data:
+                            payload[key] = data[key]
                     if row:
-                        row.payload = data
+                        row.payload = payload
+                        flag_modified(row, "payload")
                     else:
-                        row = RoomState(room_id=room_id, payload=data)
-                        session.add(row)
+                        session.add(RoomState(room_id=room_id, payload=payload))
                     await session.commit()
 
                 await manager.broadcast_scene_update(room_id, data, exclude_websocket=websocket)
