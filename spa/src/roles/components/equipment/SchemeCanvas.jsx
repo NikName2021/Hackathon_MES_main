@@ -6,7 +6,11 @@ import './SchemeCanvas.css'
 /**
  * Область схемы, куда перетаскиваются элементы.
  * Отображает размещённые элементы с возможностью перетаскивания.
- * Если передан roomId, поверх схемы рисуется слой распространения огня (синхронизирован между ролями).
+ * Если передан roomId и showFireSpread !== false, поверх схемы рисуется слой распространения огня.
+ * Диспетчеру слой огня не показывается (showFireSpread=false).
+ * @param {object} props
+ * @param {string | null} [props.roomId=null] — id комнаты для слоя огня
+ * @param {boolean} [props.showFireSpread=true] — показывать ли слой распространения огня
  */
 function SchemeCanvas({
   placedItems,
@@ -18,6 +22,7 @@ function SchemeCanvas({
   readOnly,
   zoom = 1,
   roomId = null,
+  showFireSpread = true,
 }) {
   const [dragOver, setDragOver] = useState(false)
   const draggingIdRef = useRef(null)
@@ -320,7 +325,7 @@ function SchemeCanvas({
             {canvasObjects.map(renderCanvasObject)}
           </svg>
         )}
-        {roomId && <FireSpreadLayer roomId={roomId} zoom={zoom} />}
+        {roomId && showFireSpread && <FireSpreadLayer roomId={roomId} zoom={zoom} />}
         {placedItems.map((item) => (
           <div
             key={item.id}

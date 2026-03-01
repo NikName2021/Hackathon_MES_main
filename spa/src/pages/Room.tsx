@@ -11,7 +11,7 @@ import { useRoomGameSocket } from "@/hooks/useRoomGameSocket";
 import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
 import { useRoomId, useRoomInvites } from "@/store/room";
 import { setGameSummary } from "@/store/gameSummary";
-import { getSimulationState, postEndGame } from "@/api";
+import { getSimulationState, getRoomState, postEndGame } from "@/api";
 
 const ROLE_LABELS: Record<string, string> = {
   dispatcher: "Диспетчер",
@@ -79,25 +79,49 @@ export const RoomPage = () => {
     }
   }
 
-  useEffect(() => {
-    if (!remoteState) return;
-    const items = Array.isArray(remoteState.placedItems)
-      ? remoteState.placedItems
-      : [];
+  /** Применяем состояние сцены (как у РТП): расстановка техники, зум, фон, объекты канваса */
+  const applySceneState = (
+    state: {
+      placedItems?: unknown[];
+      zoom?: number;
+      canvasBackground?: string | null;
+      canvasObjects?: unknown[];
+      canvasObjectsProvided?: boolean;
+    } | null
+  ) => {
+    if (!state) return;
+    const items = Array.isArray(state.placedItems) ? state.placedItems : [];
     setPlacedItems(items);
-    if (typeof remoteState.zoom === "number") setZoom(remoteState.zoom);
-    if (remoteState.canvasBackground !== undefined) {
-      setCanvasBackgroundUrl(remoteState.canvasBackground ?? null);
+    if (typeof state.zoom === "number") setZoom(state.zoom);
+    if (state.canvasBackground !== undefined) {
+      setCanvasBackgroundUrl(state.canvasBackground ?? null);
     }
-    const canvasObjectsProvided = (
-      remoteState as { canvasObjectsProvided?: boolean }
-    ).canvasObjectsProvided;
-    const canvasObjects = (remoteState as { canvasObjects?: unknown })
-      .canvasObjects;
-    if (canvasObjectsProvided && Array.isArray(canvasObjects)) {
-      setCanvasObjects(canvasObjects as any);
+    if (Array.isArray(state.canvasObjects)) {
+      setCanvasObjects(state.canvasObjects as any);
     }
+  };
+
+  useEffect(() => {
+    applySceneState(remoteState);
   }, [remoteState]);
+
+  /** При открытии комнаты администратором — загружаем текущее состояние сцены из БД (как у РТП), чтобы схема и расстановка были синхронизированы */
+  useEffect(() => {
+    if (!wsRoomId) return;
+    getRoomState(wsRoomId)
+      .then((res) => {
+        const state = res?.state;
+        if (state && typeof state === "object") {
+          applySceneState({
+            placedItems: (state as { placedItems?: unknown[] }).placedItems,
+            zoom: (state as { zoom?: number }).zoom,
+            canvasBackground: (state as { canvasBackground?: string | null }).canvasBackground,
+            canvasObjects: (state as { canvasObjects?: unknown[] }).canvasObjects,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [wsRoomId]);
 
   const handleEndGame = async () => {
     if (!wsRoomId || endGameLoading) return;
@@ -242,6 +266,7 @@ export const RoomPage = () => {
                   onRotationChange={() => {}}
                   readOnly
                   zoom={zoom}
+                  roomId={roomCode}
                 />
               </div>
             </section>
