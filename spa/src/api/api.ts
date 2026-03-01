@@ -328,6 +328,7 @@ export interface SimulationStateResponse {
   dispatcher_dispatches: DispatcherDispatchItem[];
   headquarters_created?: boolean;
   combat_sections_added?: number;
+  game_ended?: boolean;
 }
 
 export async function getSimulationState(
@@ -373,7 +374,6 @@ export async function postDispatcherDispatch(
   return data;
 }
 
-/** Протокол действий диспетчера */
 export interface DispatcherActionItem {
   id: number;
   room_id: string;
@@ -402,7 +402,8 @@ export async function getDispatcherActionsByRoom(
   room_id: string
 ): Promise<DispatcherActionItem[]> {
   try {
-    const { data } = await apiAuth.get<DispatcherActionItem[]>(
+
+    const { data } = await api.get<DispatcherActionItem[]>(
       `dispatcher-actions/room/${room_id}`
     );
     return data;
@@ -413,4 +414,3 @@ export async function getDispatcherActionsByRoom(
     throw err;
   }
 }
-

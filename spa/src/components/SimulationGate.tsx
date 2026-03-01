@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSimulationState } from "@/api";
 import type { SimulationStateResponse } from "@/api";
+import { GameEndedOverlay } from "./GameEndedOverlay";
 
 const ROLE_DISPATCHER = "Диспетчер";
 const ROLE_RTP = "РТП";
@@ -84,6 +85,10 @@ export function SimulationGate({ roomId, role, children }: SimulationGateProps) 
         <p className="text-white/70">Загрузка состояния симуляции…</p>
       </div>
     );
+  }
+
+  if (state.game_ended) {
+    return <GameEndedOverlay roomId={roomId} gameEnded={true} />;
   }
 
   if (role === ROLE_DISPATCHER) {

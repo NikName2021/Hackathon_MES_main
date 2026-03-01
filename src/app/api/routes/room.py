@@ -204,12 +204,14 @@ async def get_simulation_state(
         combat_sections_added = 0
     if combat_sections_added > 2:
         combat_sections_added = 2
+    game_ended = bool(payload.get("game_ended"))
     return {
         "room_id": room_id,
         "timer_started_at": payload.get("timer_started_at"),
         "dispatcher_dispatches": dispatches,
         "headquarters_created": headquarters_created,
         "combat_sections_added": combat_sections_added,
+        "game_ended": game_ended,
     }
 
 
