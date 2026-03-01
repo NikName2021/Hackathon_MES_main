@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useCanvasBackgroundUrl, useCanvasObjects } from '../../../store/canvas'
 import FireSpreadLayer from './FireSpreadLayer'
 import './SchemeCanvas.css'
@@ -8,6 +8,9 @@ import './SchemeCanvas.css'
  * Отображает размещённые элементы с возможностью перетаскивания.
  * Если передан roomId, поверх схемы рисуется слой распространения огня (синхронизирован между ролями).
  */
+const BASE_WIDTH = 960
+const BASE_HEIGHT = 540
+
 function SchemeCanvas({
   placedItems,
   onPlace,
@@ -20,6 +23,7 @@ function SchemeCanvas({
   roomId = null,
 }) {
   const [dragOver, setDragOver] = useState(false)
+  const scrollRef = useRef(null)
   const canvasObjects = useCanvasObjects()
   const canvasBackground = useCanvasBackgroundUrl()
   const hasCanvasObjects = canvasObjects && canvasObjects.length > 0
@@ -102,6 +106,17 @@ function SchemeCanvas({
     setDragOver(false)
   }
 
+  const getCanvasCoords = (event) => {
+    const container = scrollRef.current || event.currentTarget
+    const rect = container.getBoundingClientRect()
+    const scrollLeft = container.scrollLeft || 0
+    const scrollTop = container.scrollTop || 0
+    return {
+      x: (scrollLeft + (event.clientX - rect.left)) / zoom,
+      y: (scrollTop + (event.clientY - rect.top)) / zoom,
+    }
+  }
+
   const handleDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
@@ -113,20 +128,18 @@ function SchemeCanvas({
     try {
       const data = JSON.parse(dataStr)
       if (data.source === 'palette') {
-        const rect = e.currentTarget.getBoundingClientRect()
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
+        const { x, y } = getCanvasCoords(e)
         onPlace(data.item, x, y)
       } else if (data.source === 'canvas' && data.id !== undefined) {
-        const rect = e.currentTarget.getBoundingClientRect()
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
+        const { x, y } = getCanvasCoords(e)
         onMove(data.id, x, y)
       }
     } catch (err) {
       console.warn('Drop parse error', err)
     }
   }
+
+  // Панорамирование теперь через скролл контейнера.
 
   const handleItemDragStart = (e, id) => {
     if (readOnly) {
@@ -212,15 +225,25 @@ function SchemeCanvas({
 
   return (
     <div
+      ref={scrollRef}
       className={`scheme-canvas scheme-canvas-drop ${dragOver ? 'scheme-canvas-dragover' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div
-        className="scheme-canvas-inner"
-        style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+        className="scheme-canvas-viewport"
+        style={{ width: `${BASE_WIDTH * zoom}px`, height: `${BASE_HEIGHT * zoom}px` }}
       >
+        <div
+          className="scheme-canvas-inner"
+          style={{
+            width: `${BASE_WIDTH}px`,
+            height: `${BASE_HEIGHT}px`,
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top left',
+          }}
+        >
         {hasCanvasLayer && (
           <svg
             className="scheme-canvas-overlay"
@@ -301,6 +324,7 @@ function SchemeCanvas({
             Перетащите элементы с панели сюда
           </div>
         )}
+        </div>
       </div>
     </div>
   )

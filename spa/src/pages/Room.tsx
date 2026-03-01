@@ -8,10 +8,13 @@ import { RoomTimer } from "@/components/RoomTimer";
 import { GameEndedOverlay } from "@/components/GameEndedOverlay";
 import SchemeCanvas from "@/roles/components/equipment/SchemeCanvas";
 import { useRoomGameSocket } from "@/hooks/useRoomGameSocket";
-import { getCanvasState, setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
+import {
+  getCanvasState,
+  setCanvasBackgroundUrl,
+  setCanvasObjects,
+} from "@/store/canvas";
 import { useRoomId, useRoomInvites } from "@/store/room";
 import { setGameSummary } from "@/store/gameSummary";
-import { PATHS } from "@/config/paths";
 import { getSimulationState, postEndGame } from "@/api";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -23,7 +26,6 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export const RoomPage = () => {
-  const navigate = useNavigate();
   const { roomId: paramRoomId } = useParams();
   const storedRoomId = useRoomId();
   const invites = useRoomInvites();
@@ -39,7 +41,7 @@ export const RoomPage = () => {
   const buildIssues = (
     canvasObjects: any[],
     items: any[],
-    backgroundUrl: string | null
+    backgroundUrl: string | null,
   ) => {
     const issues: string[] = [];
     if (!backgroundUrl) {
@@ -56,7 +58,7 @@ export const RoomPage = () => {
     }
     const hasZones = Array.isArray(canvasObjects)
       ? canvasObjects.some((obj) =>
-          ["line", "rect", "circle"].includes(String(obj?.type))
+          ["line", "rect", "circle"].includes(String(obj?.type)),
         )
       : false;
     if (!hasZones) {
@@ -170,6 +172,18 @@ export const RoomPage = () => {
         </section>
 
         <section className="grid gap-4">
+          <div className="mt-4">
+            <SchemeCanvas
+              placedItems={placedItems}
+              onPlace={() => {}}
+              onMove={() => {}}
+              onRemove={() => {}}
+              onScaleChange={() => {}}
+              onRotationChange={() => {}}
+              readOnly
+              zoom={zoom}
+            />
+          </div>
           {invites.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
               Нет данных по приглашениям.
@@ -234,18 +248,6 @@ export const RoomPage = () => {
                 Наблюдение за тем, как участники размещают силы и средства на
                 схеме.
               </p>
-              <div className="mt-4">
-                <SchemeCanvas
-                  placedItems={placedItems}
-                  onPlace={() => {}}
-                  onMove={() => {}}
-                  onRemove={() => {}}
-                  onScaleChange={() => {}}
-                  onRotationChange={() => {}}
-                  readOnly
-                  zoom={zoom}
-                />
-              </div>
             </section>
             <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
@@ -264,4 +266,3 @@ export const RoomPage = () => {
     </main>
   );
 };
-

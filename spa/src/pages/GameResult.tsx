@@ -53,7 +53,7 @@ export const GameResultPage = () => {
           </p>
           <Button
             size="lg"
-            className="h-12 min-w-[220px] bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
+            className="h-12 min-w-[220px]  from-red-600 via-orange-600 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
             onClick={() => navigate(PATHS.ROOT)}
           >
             На главную

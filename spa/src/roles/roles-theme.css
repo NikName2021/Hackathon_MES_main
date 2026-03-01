@@ -291,6 +291,8 @@
   border: 1px solid #e2e8f0 !important;
   border-radius: 0.75rem;
   min-height: 500px;
+  height: 560px;
+  max-height: 70vh;
 }
 
 .role-layout .scheme-placeholder {

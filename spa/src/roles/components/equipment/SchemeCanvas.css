@@ -5,11 +5,17 @@
   border: 1px dashed #d1d5db;
   border-radius: 6px;
   position: relative;
+  overflow: auto;
+}
+
+.scheme-canvas-viewport {
+  position: relative;
 }
 
 .scheme-canvas-inner {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
 }
 
 .scheme-canvas-overlay {

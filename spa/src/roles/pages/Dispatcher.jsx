@@ -48,6 +48,7 @@ function Dispatcher() {
   const [dispatchQuantities, setDispatchQuantities] = useState({})
   const [dispatchEta, setDispatchEta] = useState({})
   const [dispatches, setDispatches] = useState([])
+  const [zoom, setZoom] = useState(1)
 
   const [fireAddress, setFireAddress] = useState('')
   const [dispatchAddress] = useState('Россия, Сириус, Триумфальная ул., 24')
@@ -210,6 +211,14 @@ function Dispatcher() {
     setDispatchEta(next)
   }
 
+  const handleZoomDown = () => {
+    setZoom((current) => Math.max(0.5, +(current - 0.1).toFixed(1)))
+  }
+
+  const handleZoomUp = () => {
+    setZoom((current) => Math.min(2, +(current + 0.1).toFixed(1)))
+  }
+
   const handleSendDispatch = async (vehicle) => {
     const qty = dispatchQuantities[vehicle.id] || 0
     const eta = dispatchEta[vehicle.id] || ''
@@ -346,7 +355,13 @@ function Dispatcher() {
                 Схема расстановки сил и средств, формируемая руководителем учебного занятия
                 и передаваемая с бэкенда.
               </p>
-              <SchemeCanvas placedItems={[]} readOnly zoom={1} roomId={roomId} />
+              <div className="scheme-zoom-controls">
+                <span>Масштаб карты:</span>
+                <button type="button" onClick={handleZoomDown}>−</button>
+                <span className="scheme-zoom-value">{Math.round(zoom * 100)}%</span>
+                <button type="button" onClick={handleZoomUp}>+</button>
+              </div>
+              <SchemeCanvas placedItems={[]} readOnly zoom={zoom} roomId={roomId} />
             </div>
 
             <section className="panel panel-dispatch">
