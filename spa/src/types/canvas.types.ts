@@ -5,6 +5,7 @@ export type CanvasObjectBase = {
   type: CanvasObjectType;
   color: string;
   rotation: number;
+  material?: string;
 };
 
 export type CanvasLine = CanvasObjectBase & {

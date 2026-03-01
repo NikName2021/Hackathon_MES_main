@@ -32,6 +32,14 @@ const COLORS = [
   "#38BDF8",
   "#E2E8F0",
 ];
+const MATERIALS = [
+  { value: "бетон", label: "Бетон" },
+  { value: "дерево", label: "Дерево" },
+  { value: "керамика", label: "Керамика" },
+  { value: "металл", label: "Металл" },
+  { value: "стекло", label: "Стекло" },
+  { value: "пластик", label: "Пластик" },
+];
 const CANVAS_WIDTH = 1920;
 const CANVAS_HEIGHT = 1080;
 
@@ -43,6 +51,7 @@ export const RoomCanvasEditor = () => {
 
   const [tool, setTool] = useState<Tool>("select");
   const [color, setColor] = useState(COLORS[0]);
+  const [material, setMaterial] = useState(MATERIALS[0].value);
   const [strokeWidth, setStrokeWidth] = useState<number>(3);
   const [draft, setDraft] = useState<CanvasObject | null>(null);
   const [drag, setDrag] = useState<{
@@ -121,6 +130,7 @@ export const RoomCanvasEditor = () => {
         radius: 10,
         color: "#EF4444",
         rotation: 0,
+        material,
       };
       addCanvasObject(fire);
       return;
@@ -137,6 +147,7 @@ export const RoomCanvasEditor = () => {
         strokeWidth,
         color,
         rotation: 0,
+        material,
       };
       setDraft(line);
       return;
@@ -153,6 +164,7 @@ export const RoomCanvasEditor = () => {
         strokeWidth,
         color,
         rotation: 0,
+        material,
       };
       setDraft(rect);
       return;
@@ -167,6 +179,7 @@ export const RoomCanvasEditor = () => {
       strokeWidth,
       color,
       rotation: 0,
+      material,
     };
     setDraft(circle);
   };
@@ -425,6 +438,20 @@ export const RoomCanvasEditor = () => {
             className="h-8 w-20 rounded-xl border-white/20 bg-white/95 text-slate-900"
           />
         </div>
+        <div className="flex items-center gap-2 text-xs text-white/70">
+          <span>Материал</span>
+          <select
+            value={material}
+            onChange={(event) => setMaterial(event.target.value)}
+            className="h-8 rounded-xl border border-white/20 bg-white/95 px-2 text-slate-900"
+          >
+            {MATERIALS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -474,6 +501,24 @@ export const RoomCanvasEditor = () => {
             Объект
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <label className="grid gap-1 text-xs text-white/70">
+              <span>Материал</span>
+              <select
+                value={selectedObject.material ?? material}
+                onChange={(event) =>
+                  updateCanvasObject(selectedObject.id, {
+                    material: event.target.value,
+                  })
+                }
+                className="h-10 rounded-xl border border-white/20 bg-white/95 px-3 text-slate-900"
+              >
+                {MATERIALS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             {selectedObject.type !== "line" && (
               <>
                 <label className="grid gap-1 text-xs text-white/70">

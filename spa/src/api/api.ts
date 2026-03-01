@@ -179,6 +179,8 @@ export async function getRoomObjects(room_id: string) {
       .map((obj) => {
         const rotation = (obj as { rotation?: number }).rotation ?? 0;
         const color = (obj as { color?: string }).color ?? "#F97316";
+        const material =
+          (obj as { material?: string }).material ?? "бетон";
         if (obj.type === "line") {
           return {
             ...obj,
@@ -189,6 +191,7 @@ export async function getRoomObjects(room_id: string) {
             strokeWidth: Number(obj.strokeWidth) || 2,
             rotation,
             color,
+            material,
           } as CanvasObject;
         }
         if (obj.type === "rect") {
@@ -201,6 +204,7 @@ export async function getRoomObjects(room_id: string) {
             strokeWidth: Number(obj.strokeWidth) || 2,
             rotation,
             color,
+            material,
           } as CanvasObject;
         }
         if (obj.type === "circle") {
@@ -212,6 +216,7 @@ export async function getRoomObjects(room_id: string) {
             strokeWidth: Number(obj.strokeWidth) || 2,
             rotation,
             color,
+            material,
           } as CanvasObject;
         }
         if (obj.type === "fire") {
@@ -222,6 +227,7 @@ export async function getRoomObjects(room_id: string) {
             radius: Math.abs(Number(obj.radius) || 8),
             rotation,
             color: (obj as { color?: string }).color ?? "#EF4444",
+            material,
           } as CanvasObject;
         }
         return null;
