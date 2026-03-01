@@ -2,7 +2,11 @@
  * 2GIS API: геокодирование и маршрутизация.
  * Docs: https://dev.2gis.com/
  */
-const API_KEY = 'c63d24f7-6ab3-4dc3-9739-1b4047a329c3'
+const API_KEY = import.meta.env.VITE_2GIS_API_KEY
+
+if (!API_KEY) {
+  throw new Error('VITE_2GIS_API_KEY не задан в .env')
+}
 
 export async function geocode(address) {
   const url = `https://catalog.api.2gis.com/3.0/items/geocode?q=${encodeURIComponent(address)}&fields=items.point&key=${API_KEY}`
