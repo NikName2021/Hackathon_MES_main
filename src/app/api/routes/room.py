@@ -1,3 +1,4 @@
+import datetime
 import json
 from pathlib import Path
 
@@ -81,12 +82,40 @@ async def get_room_status(
             url=f"{BASE_URL}/join/{invite.token}",
         ))
 
+    # Запуск таймера комнаты при нажатии «Сохранить» — виден всем ролям
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    payload = dict(state_row.payload) if state_row and state_row.payload else {}
+    payload["timer_started_at"] = datetime.datetime.utcnow().isoformat(timespec="milliseconds") + "Z"
+    if state_row:
+        state_row.payload = payload
+    else:
+        db.add(RoomState(room_id=room.id, payload=payload))
+
     await db.commit()
 
     return RoomAddCreated(
         invites=invites_out,
     )
 
+
+
+@router.get("/{room_id}/timer")
+async def get_room_timer(
+        room_id: str,
+        db: AsyncSession = Depends(async_get_db),
+):
+    """
+    Время старта таймера комнаты. Без авторизации — таймер видят все участники.
+    """
+    room_result = await db.execute(select(Room).where(Room.id == room_id))
+    room = room_result.scalar_one_or_none()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    state_result = await db.execute(select(RoomState).where(RoomState.room_id == room_id))
+    state_row = state_result.scalar_one_or_none()
+    payload = state_row.payload if state_row and state_row.payload else {}
+    return {"room_id": room_id, "timer_started_at": payload.get("timer_started_at")}
 
 
 @router.get("/{room_id}/state")

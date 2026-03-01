@@ -239,4 +239,24 @@ export async function getRoomObjects(room_id: string) {
   }
 }
 
+export interface RoomStateResponse {
+  room_id: string;
+  state: { timer_started_at?: string };
+}
+
+export async function getRoomState(room_id: string): Promise<RoomStateResponse> {
+  const { data } = await apiAuth.get<RoomStateResponse>(`room/${room_id}/state`);
+  return data;
+}
+
+/** Таймер комнаты — без авторизации, для отображения у всех участников */
+export interface RoomTimerResponse {
+  room_id: string;
+  timer_started_at: string | null;
+}
+
+export async function getRoomTimer(room_id: string): Promise<RoomTimerResponse> {
+  const { data } = await api.get<RoomTimerResponse>(`room/${room_id}/timer`);
+  return data;
+}
 
