@@ -268,6 +268,14 @@ export async function getRoomState(room_id: string): Promise<RoomStateResponse> 
   return data;
 }
 
+/** Завершить игру (только администратор). Все игроки получат окно завершения. */
+export async function postEndGame(room_id: string): Promise<{ ok: boolean; message: string }> {
+  const { data } = await apiAuth.post<{ ok: boolean; message: string }>(
+    `room/${room_id}/end-game`
+  );
+  return data;
+}
+
 /** Таймер комнаты — без авторизации, для отображения у всех участников */
 export interface RoomTimerResponse {
   room_id: string;

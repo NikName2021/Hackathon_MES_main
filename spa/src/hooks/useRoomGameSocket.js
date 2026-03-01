@@ -33,6 +33,7 @@ function getGameSocketUrl(roomId) {
  */
 export function useRoomGameSocket(roomId) {
   const [remoteState, setRemoteState] = useState(null)
+  const [gameEnded, setGameEnded] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
   const wsRef = useRef(null)
   const reconnectTimeoutRef = useRef(null)
@@ -51,6 +52,7 @@ export function useRoomGameSocket(roomId) {
   useEffect(() => {
     if (!roomId) {
       setRemoteState(null)
+      setGameEnded(false)
       setIsConnected(false)
       return
     }
@@ -77,6 +79,10 @@ export function useRoomGameSocket(roomId) {
             const data = msg.data != null && typeof msg.data === 'object'
               ? msg.data
               : {}
+            const hasGameEnded = Object.prototype.hasOwnProperty.call(data, 'game_ended')
+            if (hasGameEnded && data.game_ended === true) {
+              setGameEnded(true)
+            }
             const hasPlacedItems = Object.prototype.hasOwnProperty.call(data, 'placedItems')
             const hasZoom = Object.prototype.hasOwnProperty.call(data, 'zoom')
             const hasCanvasBackground = Object.prototype.hasOwnProperty.call(data, 'canvasBackground')
@@ -152,5 +158,5 @@ export function useRoomGameSocket(roomId) {
     }
   }, [roomId])
 
-  return { sendSceneUpdate, remoteState, isConnected }
+  return { sendSceneUpdate, remoteState, isConnected, gameEnded }
 }
