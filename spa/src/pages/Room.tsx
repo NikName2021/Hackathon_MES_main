@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioWidget } from "@/components/RadioWidget";
 import { RoomTimer } from "@/components/RoomTimer";
+import SchemeCanvas from "@/roles/components/equipment/SchemeCanvas";
+import { useRoomGameSocket } from "@/hooks/useRoomGameSocket";
+import { setCanvasBackgroundUrl, setCanvasObjects } from "@/store/canvas";
 import { useRoomId, useRoomInvites } from "@/store/room";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -22,6 +25,10 @@ export const RoomPage = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const roomCode = paramRoomId ?? storedRoomId ?? "—";
+  const wsRoomId = roomCode && roomCode !== "—" ? roomCode : null;
+  const { remoteState } = useRoomGameSocket(wsRoomId);
+  const [placedItems, setPlacedItems] = useState([]);
+  const [zoom, setZoom] = useState(1);
 
   async function copy(text: string, key: string) {
     try {
@@ -29,12 +36,30 @@ export const RoomPage = () => {
       setCopiedKey(key);
       window.setTimeout(
         () => setCopiedKey((current) => (current === key ? null : current)),
-        1200
+        1200,
       );
     } catch {
       prompt("Скопируйте ссылку вручную:", text);
     }
   }
+
+  useEffect(() => {
+    if (!remoteState) return;
+    const items = Array.isArray(remoteState.placedItems)
+      ? remoteState.placedItems
+      : [];
+    setPlacedItems(items);
+    if (typeof remoteState.zoom === "number") setZoom(remoteState.zoom);
+    if (remoteState.canvasBackground !== undefined) {
+      setCanvasBackgroundUrl(remoteState.canvasBackground ?? null);
+    }
+    if (
+      remoteState.canvasObjectsProvided &&
+      Array.isArray(remoteState.canvasObjects)
+    ) {
+      setCanvasObjects(remoteState.canvasObjects);
+    }
+  }, [remoteState]);
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -46,27 +71,37 @@ export const RoomPage = () => {
               <p className="text-xs uppercase tracking-[0.3em] text-[var(--accent-light)] font-medium">
                 Оперативный штаб
               </p>
-              <h1 className="mt-3 text-3xl font-semibold">
-                Комната создана
-              </h1>
+              <h1 className="mt-3 text-3xl font-semibold">Комната создана</h1>
               <p className="mt-3 text-sm text-white/70">
                 Передайте участникам их персональные ссылки для входа в комнату.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-900/60 px-5 py-4">
-              <div className="text-xs text-white/60">Код комнаты</div>
-              <div className="mt-1 text-lg font-semibold tracking-widest">
-                {roomCode}
-              </div>
-              <div className="mt-4 text-xs text-white/60">Ваша роль</div>
+            <div className="flex flex-col items-start gap-3 md:items-end">
+              <Button
+                size="lg"
+                className="h-11 min-w-[200px] bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:from-red-500 hover:via-orange-500 hover:to-amber-400"
+                onClick={() => {}}
+              >
+                Закончить игру
+              </Button>
+              <div className="rounded-2xl border border-white/10 bg-slate-900/60 px-5 py-4">
+                <div className="text-xs text-white/60">Код комнаты</div>
+                <div className="mt-1 text-lg font-semibold tracking-widest">
+                  {roomCode}
+                </div>
+                <div className="mt-4 text-xs text-white/60">Ваша роль</div>
                 <div className="mt-1 text-sm font-semibold text-[var(--accent-light)]">
-                Администратор
+                  Администратор
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         <section className="grid gap-4">
+          <div className="mt-4">
+            <SchemeCanvas placedItems={placedItems} readOnly zoom={zoom} />
+          </div>
           {invites.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
               Нет данных по приглашениям.
@@ -123,12 +158,23 @@ export const RoomPage = () => {
 
         {roomCode && roomCode !== "—" && (
           <>
+            <section className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/20 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
+                Схема действий
+              </p>
+              <p className="mt-2 text-sm text-white/70">
+                Наблюдение за тем, как участники размещают силы и средства на
+                схеме.
+              </p>
+            </section>
             <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent-light)] font-medium">
                 Рация
               </p>
               <p className="mt-2 text-sm text-white/70">
-                Кнопка «Рация» внизу справа — подключение к каналу комнаты. После подключения вы увидите список участников и того, кто сейчас говорит.
+                Кнопка «Рация» внизу справа — подключение к каналу комнаты.
+                После подключения вы увидите список участников и того, кто
+                сейчас говорит.
               </p>
             </section>
             <RadioWidget roomId={roomCode} identity="admin" isAdmin={true} />
