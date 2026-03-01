@@ -53,6 +53,7 @@ function Dispatcher() {
   const [fireCoords, setFireCoords] = useState(null)
   const [routeLoading, setRouteLoading] = useState(false)
   const [routeError, setRouteError] = useState(null)
+  const [dispatchError, setDispatchError] = useState(null)
 
   const handleScenarioChange = (field, value) => {
     setScenario((prev) => ({ ...prev, [field]: value }))
@@ -102,18 +103,29 @@ function Dispatcher() {
     setDispatchEta(next)
   }
 
-  const handleSendDispatch = (vehicle) => {
+  const handleSendDispatch = async (vehicle) => {
     const qty = dispatchQuantities[vehicle.id] || 0
     const eta = dispatchEta[vehicle.id] || ''
     if (qty < 1 || !eta) return
     const etaNum = parseInt(eta, 10) || 0
-    if (roomId && etaNum > 0) {
-      postDispatcherDispatch(roomId, {
-        vehicleId: vehicle.id,
-        vehicleName: vehicle.name,
-        count: qty,
-        etaMinutes: etaNum,
-      }).catch(() => {})
+    setDispatchError(null)
+    if (!roomId) {
+      setDispatchError('Не найден идентификатор комнаты. Войдите по ссылке приглашения.')
+      return
+    }
+    if (etaNum > 0) {
+      try {
+        await postDispatcherDispatch(roomId, {
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.name,
+          count: qty,
+          etaMinutes: etaNum,
+        })
+      } catch (err) {
+        const msg = err?.response?.data?.detail || err?.message || 'Ошибка сети'
+        setDispatchError(`Не удалось отправить высылку на сервер: ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`)
+        return
+      }
     }
     setDispatches((prev) => [
       ...prev,
@@ -235,6 +247,11 @@ function Dispatcher() {
               <p className="panel-hint">
                 Выберите технику, задайте количество и время следования, затем отправьте.
               </p>
+              {dispatchError && (
+                <p className="dispatch-route-error" role="alert">
+                  {dispatchError}
+                </p>
+              )}
 
               <div className="dispatch-route-block">
                 <h4>Расчёт времени доставки</h4>
